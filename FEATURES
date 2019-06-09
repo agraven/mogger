@@ -1,0 +1,21 @@
+Articles
+* List X
+* View X
+* Add X
+* Edit X
+* Delete X
+Comments
+* Anonymously
+  - Add
+  - View X
+* Logged in
+  - Add
+  - Edit
+  - Delete
+
+Users
+* Add
+* Edit
+* Delete
+* Login/create token
+* Logout

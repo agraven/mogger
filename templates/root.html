@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html prefix="og: http://ogp.me/ns#">
+<head>
+	<title>{% block title %}Amanda's blog{% endblock %}</title>
+
+	<meta charset="UTF-8"/>
+	<meta name="viewport" content="width=device-width, inital-scale=1.0"/>
+	<link href="/file/style.css" rel="stylesheet" type="text/css">
+	{% block head %}{% endblock %}
+</head>
+<body>
+	<main>
+		<nav>
+		</nav>
+		{% block content %}{% endblock %}
+	</main>
+</body>
+</html>

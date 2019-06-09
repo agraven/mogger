@@ -1,0 +1,25 @@
+article {
+  background: #804e5b;
+  padding: 3em;
+  margin-bottom: 10px;
+}
+header {
+  margin-bottom: 1em;
+}
+h1 {
+  margin: 0;
+  font-family: "Roboto";
+  font-size: xx-large;
+}
+html {
+  color: white;
+  background: #80283f;
+  font-family: "Merriweather",serif;
+  line-height: 1.5;
+  font-size: 14px;
+}
+main {
+  max-width: 40em;
+  margin: auto;
+}
+@import url('https://fonts.googleapis.com/css?family=Merriweather&display=swap');
