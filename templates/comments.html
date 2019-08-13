@@ -1,0 +1,10 @@
+<div class="comment">
+	<header>
+		<span class="name">{{ comment.name.as_ref().or(comment.author.as_ref()).unwrap() }}</span>
+		<span class="time">{{ comment.date.format("%d b %y %H:%M") }}</span>
+	</header>
+	{{ comment.content }}
+	{% for child in children %}
+		{{ child.render().unwrap() }}
+	{% endfor %}
+</div>

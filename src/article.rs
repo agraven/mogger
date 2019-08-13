@@ -7,7 +7,10 @@ use diesel::RunQueryDsl;
 
 use crate::schema::articles;
 
+use crate::user::User;
+
 const PREVIEW_LEN: usize = 500;
+const DESCRIPTION_LEN: usize = 160;
 
 #[derive(Debug, Deserialize, Serialize, Queryable, Identifiable)]
 pub struct Article {
@@ -29,20 +32,37 @@ pub struct Article {
 }
 
 impl Article {
+    /// Get the user who submitted this article
+    pub fn user(&self, connection: &Connection) -> Result<User, DieselError> {
+        crate::schema::users::dsl::users
+            .find(&self.author)
+            .first(connection)
+    }
+
+    /// Get a short slice of the article's contents.
+    pub fn description<'a>(&'a self) -> &'a str {
+        let mut end = DESCRIPTION_LEN;
+        while !self.content.is_char_boundary(end) {
+            end -= 1;
+        }
+        &self.content[..end]
+    }
+
     /// Used when displaying a preview of the article's contents in a list of articles.
     pub fn preview<'a>(&'a self) -> &'a str {
         let len = self.content.len();
-        let end = if len < PREVIEW_LEN {
-            len
-        } else {
-            // Get the last whitespice character before PREVIEW_LEN.
-            self.content
-                .match_indices(char::is_whitespace)
-                .map(|(i, _)| i)
-                .take_while(|i| *i < PREVIEW_LEN)
-                .last()
-                .unwrap_or(len)
-        };
+        if len < PREVIEW_LEN {
+            return &self.content[..len];
+        }
+
+        // Get a valid index
+        let mut end = PREVIEW_LEN;
+        while !self.content.is_char_boundary(end) {
+            end -= 1;
+        }
+        let end = self.content[..end]
+            .rfind(char::is_whitespace)
+            .unwrap_or(end);
         &self.content[..end]
     }
 }

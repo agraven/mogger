@@ -15,7 +15,7 @@ use crate::DbConnection;
 
 #[derive(Deserialize, StateData, StaticResponseExtender)]
 pub struct ArticlePath {
-    id: String,
+    pub id: String,
 }
 
 /// An article id or url

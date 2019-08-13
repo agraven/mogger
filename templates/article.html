@@ -1,0 +1,26 @@
+{% extends "root.html" %}
+{% block head %}
+	<meta property="og:title" content="{{ article.title }}"/>
+	<meta property="og:type" content="article"/>
+	<meta property="og:url" content="https://amandag.net/article/{{ article.id }}"/>
+	<!-- TODO: Add image tag -->
+	<meta property="og:description" content="{{ article.description() }}…"/>
+	<meta property="og:site_name" content="Amanda's blog"/>
+
+	<meta property="article:author" content="{{ author_name }}">
+	<meta property="article:published_time" content="{{ article.date.format("%Y-%m-%dT%H:%M:%SZ") }}">
+	<!-- TODO: add categories -->
+{% endblock %}
+
+{% block content %}
+	<article>
+		<header>
+			<h1>{{ article.title }}</h1>
+			<span class="time">{{ article.date.format("%d %b %Y %H:%M") }}</span>
+		</header>
+		{{ article.content }}
+	</article>
+	{% for tree in comments %}
+		{{ tree.render().unwrap() }}
+	{% endfor %}
+{% endblock %}
