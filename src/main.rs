@@ -32,9 +32,11 @@ pub mod user;
 
 pub use diesel::pg::PgConnection as Connection;
 use gotham::{
+    middleware::cookie::CookieParser,
     middleware::state::StateMiddleware,
+    pipeline::new_pipeline,
     pipeline::single::single_pipeline,
-    pipeline::single_middleware,
+    //pipeline::single_middleware,
     router::builder::{build_router, DefineSingleRoute, DrawRoutes},
     router::response::extender::ResponseExtender,
     router::Router,
@@ -45,6 +47,8 @@ use http::status::StatusCode;
 use hyper::{Body, Response};
 
 use std::sync::{Arc, Mutex};
+
+use crate::user::SessionMiddleware;
 
 /// Response extender for 404 errors
 pub struct NotFound;
@@ -83,17 +87,32 @@ fn router() -> Router {
 
     // Set up shared state
     let connection = DbConnection::new();
-    let middleware = StateMiddleware::new(connection);
-    let pipeline = single_middleware(middleware);
-    let (chain, pipelines) = single_pipeline(pipeline);
+    let state_mw = StateMiddleware::new(connection);
+    // Build pipeline
+    let (chain, pipelines) = single_pipeline(
+        new_pipeline()
+            .add(state_mw)
+            .add(CookieParser)
+            .add(SessionMiddleware)
+            .build(),
+    );
 
     build_router(chain, pipelines, |route| {
+        use crate::handler::articles;
         route.get("/").to(handler!(document::index::handler));
+
+        route
+            .get("/article/:id")
+            .with_path_extractor::<articles::ArticlePath>()
+            .to(handler!(document::index::article));
+
+        route.get("/login").to(handler!(document::index::login));
+        route
+            .post("/login")
+            .to(body_handler!(document::index::login_post));
 
         route.scope("/api", |route| {
             route.scope("/articles", |route| {
-                use crate::handler::articles;
-
                 route.get("/list").to(handler!(articles::list));
                 route
                     .get("/view/:id")
@@ -107,7 +126,7 @@ fn router() -> Router {
             });
 
             route.scope("/comments", |route| {
-                use crate::handler::{articles, comments};
+                use crate::handler::comments;
 
                 route
                     .get("/list/:id")

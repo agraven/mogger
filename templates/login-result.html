@@ -1,0 +1,12 @@
+{% extends "root.html" %}
+
+{% block content %}
+	<article>
+	{% match session %}
+	{% when Some with (session) %}
+		Logged in as {{ session.user }}.
+	{% when None %}
+		Invalid credentials.
+	{% endmatch %}
+	</article>
+{% endblock %}

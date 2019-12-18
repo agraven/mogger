@@ -1,25 +1,69 @@
+@import url('https://fonts.googleapis.com/css?family=Merriweather&display=swap');
+@import url('https://fonts.googleapis.com/css?family=Roboto&display=swap');
+@import url('https://fonts.googleapis.com/css?family=Montserrat&display=swap');
 article {
-  background: #804e5b;
-  padding: 3em;
-  margin-bottom: 10px;
+  background: #FCE4DE;
+  padding: 3em 3.5em;
+  margin-bottom: 20px;
+  hyphens: auto;
+  text-align: justify;
 }
 header {
   margin-bottom: 1em;
 }
+a {
+  color: #8d1e9e;
+}
+a:visited {
+  color: #941c63;
+}
 h1 {
   margin: 0;
-  font-family: "Roboto";
+  font-family: "Roboto", sans-serif;
   font-size: xx-large;
+  text-decoration: none !important;
+}
+h1 > a {
+  color: black;
+  text-decoration: none;
+}
+h1 > a:hover {
+  text-decoration: underline;
+}
+time {
+  color: #444444;
+  font-family: "Montserrat";
 }
 html {
-  color: white;
+  color: black;
   background: #80283f;
-  font-family: "Merriweather",serif;
+  font-family: "Merriweather", serif;
   line-height: 1.5;
   font-size: 14px;
 }
 main {
-  max-width: 40em;
+  max-width: 45em;
   margin: auto;
 }
-@import url('https://fonts.googleapis.com/css?family=Merriweather&display=swap');
+nav {
+  background: #e8B8ae;
+  display: flex;
+  margin-bottom: 20px;
+  justify-content: space-between;
+}
+nav ul {
+  font-family: "Roboto", sans-serif;
+  font-size: larger;
+  list-style-type: none;
+  display: inline-flex;
+  padding: 0;
+  margin: 0px 10px;
+}
+nav ul li a {
+  padding: 15px;
+  display: block;
+  text-decoration: none;
+}
+nav ul li a:hover {
+  background: #cc968b70;
+}

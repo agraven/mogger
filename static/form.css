@@ -1,0 +1,11 @@
+article form {
+  display: table;
+  padding: 1em 2em;
+}
+article form div {
+  display: table-row;
+}
+article form label, article form input {
+  display: table-cell;
+  margin-bottom: 10px;
+}

@@ -1,0 +1,22 @@
+.comment {
+  background: #e8B8ae;
+  padding: 20px;
+  margin-top: 12px;
+  box-sizing: content-box;
+  hyphens: auto;
+  text-align: justify;
+}
+.comment .comment {
+  background: #E39C8C;
+}
+.comment .comment .comment {
+  background: #e8B8ae;
+}
+.name {
+  font-size: large;
+  font-family: "Roboto";
+  /*display: block;*/
+}
+.comment time {
+  float: right;
+}

@@ -1,0 +1,32 @@
+{% extends "root.html" %}
+
+{% block head %}
+	<link href="/file/form.css" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block content %}
+	<article>
+		<header>
+			<h1>Log in</h1>
+		</header>
+		{% if session.is_some() %}
+			<!-- TODO: Insert sign out link -->
+			<p>You are already logged in. Would you like to <a>sign out</a>?
+		{% else %}
+			<p>Please enter your login information
+			<form method="post">
+				<div>
+					<label for="username">Username: </label>
+					<input type="text" name="user" id="username" required>
+				</div>
+				<div>
+					<label for="password">Password: </label>
+					<input type="password" name="password" id="password" required>
+				</div>
+				<div class="submit">
+					<input type="submit">
+				</div>
+			</form>
+		{% endif %}
+	</article>
+{% endblock %}

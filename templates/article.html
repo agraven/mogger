@@ -1,5 +1,6 @@
 {% extends "root.html" %}
 {% block head %}
+	<link href="/file/comment.css" rel="stylesheet" type="text/css">
 	<meta property="og:title" content="{{ article.title }}"/>
 	<meta property="og:type" content="article"/>
 	<meta property="og:url" content="https://amandag.net/article/{{ article.id }}"/>
@@ -15,10 +16,12 @@
 {% block content %}
 	<article>
 		<header>
-			<h1>{{ article.title }}</h1>
-			<span class="time">{{ article.date.format("%d %b %Y %H:%M") }}</span>
+			<h1>{{ article.title|escape }}</h1>
+			<time title="{{ article.date.format("%c") }}" datetime="{{ article.date.format("%F %T") }}">
+				{{ article.date.format("%d %b %Y - %H:%M") }}
+			</time>
 		</header>
-		{{ article.content }}
+		{{ article.content|escape }}
 	</article>
 	{% for tree in comments %}
 		{{ tree.render().unwrap() }}

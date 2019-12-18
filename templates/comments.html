@@ -1,9 +1,9 @@
 <div class="comment">
 	<header>
-		<span class="name">{{ comment.name.as_ref().or(comment.author.as_ref()).unwrap() }}</span>
-		<span class="time">{{ comment.date.format("%d b %y %H:%M") }}</span>
+		<span class="name">{{ comment.name.as_ref().or(comment.author.as_ref()).unwrap()|e }}</span>
+		<time title="{{ comment.date.format("%c") }}">{{ comment.date.format("%d %b %y %H:%M") }}</time>
 	</header>
-	{{ comment.content }}
+	{{ comment.content|escape }}
 	{% for child in children %}
 		{{ child.render().unwrap() }}
 	{% endfor %}

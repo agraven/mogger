@@ -1,12 +1,22 @@
 use bcrypt::BcryptError;
 use chrono::{Duration, NaiveDateTime, Utc};
-use diesel::prelude::*;
-use diesel::result::Error as DieselError;
-use diesel::PgConnection as Connection;
+use cookie::CookieJar;
+use diesel::{prelude::*, result::Error as DieselError, PgConnection as Connection};
+use futures::future;
+use gotham::{
+    handler::HandlerFuture,
+    helpers::http::response::create_response,
+    middleware::Middleware,
+    state::{FromState, State},
+};
+use gotham_derive::{NewMiddleware, StateData};
 use rand::prelude::*;
 use sha2::{Digest, Sha256};
 
-use crate::schema::{sessions, users};
+use crate::{
+    schema::{sessions, users},
+    DbConnection,
+};
 
 const SALT_LEN: usize = 8;
 const SESSION_LEN: usize = 8;
@@ -14,15 +24,15 @@ const SESSION_LEN: usize = 8;
 #[derive(Debug, Deserialize, Serialize, Queryable, Identifiable, Insertable)]
 pub struct User {
     /// The unique username/login
-    id: String,
+    pub id: String,
     /// The hashed password
     hash: String,
     /// The salt for the password
     salt: Vec<u8>,
     /// The user's display name
-    name: String,
+    pub name: String,
     /// The user's email address
-    email: String,
+    pub email: String,
 }
 
 impl User {
@@ -88,7 +98,7 @@ impl Login {
     }
 }
 
-#[derive(Queryable, Insertable, Serialize)]
+#[derive(Clone, Queryable, Insertable, Serialize, StateData)]
 pub struct Session {
     pub id: String,
     pub user: String,
@@ -96,6 +106,9 @@ pub struct Session {
 }
 
 impl Session {
+    /// Generates a new session.
+    ///
+    /// NB: Must be inserted into the database for the session to be valid.
     pub fn new(user: &str) -> Session {
         // Fill array with random data
         let mut id = [0u8; SESSION_LEN];
@@ -104,6 +117,50 @@ impl Session {
             id: base64::encode(&id),
             user: user.to_owned(),
             expires: Utc::now().naive_utc() + Duration::days(30),
+        }
+    }
+
+    /// Get the session with the specified id
+    pub fn from_id(id: &str, connection: &Connection) -> Result<Option<Session>, DieselError> {
+        sessions::dsl::sessions
+            .find(id)
+            .first(connection)
+            .optional()
+    }
+}
+
+#[derive(Clone, NewMiddleware)]
+pub struct SessionMiddleware;
+
+impl Middleware for SessionMiddleware {
+    fn call<C>(self, mut state: State, chain: C) -> Box<HandlerFuture>
+    where
+        C: FnOnce(State) -> Box<HandlerFuture>,
+    {
+        let put_session = |state: &mut State| -> Result<(), failure::Error> {
+            let arc = DbConnection::borrow_from(&state).get();
+            let connection = &arc.lock().or(Err(failure::err_msg("async error")))?;
+            let cookie = CookieJar::borrow_from(&state)
+                .get("session")
+                .map(|cookie| cookie.value());
+            if let Some(id) = cookie {
+                if let Some(session) = Session::from_id(id, connection)? {
+                    state.put(session);
+                }
+            }
+            Ok(())
+        };
+        match put_session(&mut state) {
+            Ok(()) => Box::new(chain(state)),
+            Err(e) => {
+                let response = create_response(
+                    &state,
+                    http::StatusCode::INTERNAL_SERVER_ERROR,
+                    mime::TEXT_PLAIN,
+                    e.to_string(),
+                );
+                Box::new(future::ok((state, response)))
+            }
         }
     }
 }
@@ -142,4 +199,10 @@ pub fn create(connection: &Connection, user: NewUser) -> Result<usize, DieselErr
     diesel::insert_into(users::table)
         .values(&user.into_user())
         .execute(connection)
+}
+
+pub fn get(connection: &Connection, id: &str) -> Result<User, DieselError> {
+    use crate::schema::users::dsl;
+
+    dsl::users.find(id).first(connection)
 }

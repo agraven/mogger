@@ -8,7 +8,9 @@
 		<article>
 			<header>
 				<h1><a href="/article/{{ article.url }}">{{ article.title }}</a></h1>
-				<span class="time">{{ article.date.format("%d %b %Y %H:%M") }}</span>
+				<time title="{{ article.date.format("%c") }}" datetime="{{ article.date.format("%F %T") }}">
+					{{ article.date.format("%d %b %Y - %H:%M") }}
+				</time>
 			</header>
 			{{ article.preview() }}…
 
