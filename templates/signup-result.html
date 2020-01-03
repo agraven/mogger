@@ -1,0 +1,10 @@
+{% extends "root.html" %}
+
+{% block content %}
+	<article>
+		<header>
+			<h1>User created</h1>
+		</header>
+		<p>Successfully created the user {{ session.unwrap().user }}. Enjoy your stay!
+	</article>
+{% endblock %}

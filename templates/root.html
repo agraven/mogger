@@ -18,10 +18,16 @@
 			<ul>
 			{% match session %}
 			{% when Some with (session) %}
-				<li>Welcome, {{ session.user }}</li>
+				<li class="dropdown">
+					<span class="navbar-item">Welcome, {{ session.user }}</span>
+					<div class="dropdown-content">
+						<a href="/edit">Create article</a>
+						<a href="/logout">Log out</a>
+					</div>
+				</li>
 			{% when None %}
 				<li><a href="/login">Log in</a></li>
-				<li><a>Sign up</a></li>
+				<li><a href="/signup">Sign up</a></li>
 			{% endmatch %}
 			</ul>
 		</nav>

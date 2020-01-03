@@ -55,7 +55,7 @@ pub fn submit(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::E
 
     let new: NewArticle = serde_json::from_slice(&post)?;
 
-    article::submit(connection, new)?;
+    article::submit(connection, &new)?;
     Ok(create_empty_response(&state, StatusCode::OK))
 }
 

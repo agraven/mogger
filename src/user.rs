@@ -18,8 +18,8 @@ use crate::{
     DbConnection,
 };
 
-const SALT_LEN: usize = 8;
-const SESSION_LEN: usize = 8;
+const SALT_LEN: usize = 16;
+const SESSION_LEN: usize = 24;
 
 #[derive(Debug, Deserialize, Serialize, Queryable, Identifiable, Insertable)]
 pub struct User {
@@ -45,7 +45,7 @@ impl User {
 /// A to be created user.
 ///
 /// NOTE: This structure contains the user's unencrypted password, handle it with great care!
-#[derive(Deserialize, Serialize)]
+#[derive(Clone, Deserialize, Serialize)]
 pub struct NewUser {
     /// The username
     id: String,
@@ -94,6 +94,15 @@ impl Login {
                 Ok(Some(session))
             }
             _ => Ok(None),
+        }
+    }
+}
+
+impl From<NewUser> for Login {
+    fn from(u: NewUser) -> Self {
+        Self {
+            user: u.id,
+            password: u.password,
         }
     }
 }

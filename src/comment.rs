@@ -105,6 +105,8 @@ pub fn list(connection: &Connection, article: i32) -> Result<Vec<Node>, DieselEr
     Ok(tree)
 }
 
+// FIXME: As far as I can tell, this populates the tree after getting context when it should be
+// doing it before.
 pub fn view(connection: &Connection, id: i32, context: u32) -> Result<Option<Node>, DieselError> {
     use crate::schema::comments::dsl;
 

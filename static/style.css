@@ -11,7 +11,7 @@ article {
 header {
   margin-bottom: 1em;
 }
-a {
+a[href] {
   color: #8d1e9e;
 }
 a:visited {
@@ -24,7 +24,7 @@ h1 {
   text-decoration: none !important;
 }
 h1 > a {
-  color: black;
+  color: black!important;
   text-decoration: none;
 }
 h1 > a:hover {
@@ -50,6 +50,7 @@ nav {
   display: flex;
   margin-bottom: 20px;
   justify-content: space-between;
+  flex-wrap: wrap;
 }
 nav ul {
   font-family: "Roboto", sans-serif;
@@ -59,11 +60,35 @@ nav ul {
   padding: 0;
   margin: 0px 10px;
 }
-nav ul li a {
+nav ul li a, nav ul li .navbar-item {
   padding: 15px;
   display: block;
   text-decoration: none;
 }
 nav ul li a:hover {
   background: #cc968b70;
+}
+.dropdown {
+  position: relative;
+  display: inline-block;
+}
+.dropdown > span::after {
+  content: "🞀";
+  display: inline-block;
+  width: 10px;
+  padding-left: 5px;
+}
+.dropdown > span:hover::after {
+  content: "🞃";
+}
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #e8B8ae;
+  min-width: 8rem;
+  right: 0;
+  z-index: 1;
+}
+.dropdown:hover .dropdown-content {
+  display: block;
 }

@@ -14,7 +14,7 @@
 			</header>
 			{{ article.preview() }}…
 
-			<p><a href="/article/{{ article.url }}">Read more</a></p>
+			<p><a href="/article/{{ article.url }}">Read more ({{ article.comment_count(connection).unwrap_or_default() }} comments)</a></p>
 		</article>
 	{% endfor %}
 {% endblock %}

@@ -65,6 +65,10 @@ impl Article {
             .unwrap_or(end);
         &self.content[..end]
     }
+
+    pub fn comment_count(&self, connection: &Connection) -> Result<i64, DieselError> {
+        comment_count(connection, self.id)
+    }
 }
 
 #[derive(Insertable, AsChangeset, Deserialize, Serialize)]
@@ -98,9 +102,9 @@ pub fn view(connection: &Connection, name: &str) -> Result<Article, DieselError>
     }
 }
 
-pub fn submit(connection: &Connection, article: NewArticle) -> Result<usize, DieselError> {
+pub fn submit(connection: &Connection, article: &NewArticle) -> Result<usize, DieselError> {
     diesel::insert_into(articles::table)
-        .values(&article)
+        .values(article)
         .execute(connection)
 }
 
@@ -119,4 +123,12 @@ pub fn delete(connection: &Connection, name: &str) -> Result<usize, DieselError>
         Ok(name) => diesel::delete(articles.find(name)).execute(connection),
         Err(_) => diesel::delete(articles.filter(url.eq(name))).execute(connection),
     }
+}
+
+pub fn comment_count(connection: &Connection, id: i32) -> Result<i64, DieselError> {
+    use crate::schema::comments::dsl;
+    dsl::comments
+        .filter(dsl::article.eq(id))
+        .count()
+        .first(connection)
 }

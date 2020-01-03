@@ -1,11 +1,29 @@
 article form {
-  display: table;
   padding: 1em 2em;
+  width: 100%;
+  box-sizing: border-box;
 }
 article form div {
-  display: table-row;
+  display: flex;
+  flex-wrap: wrap;
 }
 article form label, article form input {
-  display: table-cell;
   margin-bottom: 10px;
+}
+article form label {
+  width: 8em;
+  text-align: left;
+}
+textarea {
+  resize: none;
+  overflow: hidden;
+  min-height: 50px;
+  width: 100%;
+  font-family: "Merriweather", serif;
+  font-size: 14px;
+}
+article form div.sumbit {
+  margin: auto;
+  margin-top: 20px;
+  display: block;
 }

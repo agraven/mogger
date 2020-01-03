@@ -111,6 +111,16 @@ fn router() -> Router {
             .post("/login")
             .to(body_handler!(document::index::login_post));
 
+        route.get("/signup").to(handler!(document::index::signup));
+        route
+            .post("/signup")
+            .to(body_handler!(document::index::signup_post));
+
+        route.get("/edit").to(handler!(document::index::edit));
+        route
+            .post("/edit")
+            .to(body_handler!(document::index::edit_post));
+
         route.scope("/api", |route| {
             route.scope("/articles", |route| {
                 route.get("/list").to(handler!(articles::list));
@@ -171,5 +181,6 @@ fn router() -> Router {
 
 fn main() {
     let address = "127.0.0.1:6096";
+    println!("Running at {}", address);
     gotham::start(address, router())
 }
