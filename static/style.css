@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css?family=Merriweather&display=swap');
 @import url('https://fonts.googleapis.com/css?family=Roboto&display=swap');
 @import url('https://fonts.googleapis.com/css?family=Montserrat&display=swap');
+/* General element styling */
 article {
   background: #FCE4DE;
   padding: 3em 3.5em;
@@ -45,6 +46,8 @@ main {
   max-width: 45em;
   margin: auto;
 }
+
+/* nav bar */
 nav {
   background: #e8B8ae;
   display: flex;
@@ -68,6 +71,7 @@ nav ul li a, nav ul li .navbar-item {
 nav ul li a:hover {
   background: #cc968b70;
 }
+/* Dropdown menu */
 .dropdown {
   position: relative;
   display: inline-block;
@@ -91,4 +95,37 @@ nav ul li a:hover {
 }
 .dropdown:hover .dropdown-content {
   display: block;
+}
+
+/* Link list */
+ul.links {
+  list-style: none;
+  display: block;
+  margin: 10px 0;
+  padding: 0;
+}
+ul.links li {
+  display: inline-block;
+  padding: 0 5px;
+  font-family: "Roboto";
+  font-weight: bold
+}
+ul.links a {
+  color: #666;
+  text-decoration: none;
+}
+ul.links a:hover {
+  text-decoration: underline;
+}
+
+/* Link-like buttons */
+button.link-like {
+  background: none;
+  border: none;
+  color: #666;
+  font-weight: bold;
+  cursor: pointer;
+}
+button.link-like:hover {
+  text-decoration: underline
 }

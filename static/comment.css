@@ -1,16 +1,10 @@
 .comment {
-  background: #e8B8ae;
+  background: #e8b8ae;
   padding: 20px;
   margin-top: 12px;
   box-sizing: content-box;
   hyphens: auto;
   text-align: justify;
-}
-.comment .comment {
-  background: #E39C8C;
-}
-.comment .comment .comment {
-  background: #e8B8ae;
 }
 .name {
   font-size: large;
@@ -19,4 +13,35 @@
 }
 .comment time {
   float: right;
+}
+/* Nested comment coloring */
+.comment .comment { background: #e39c8c; }
+.comment .comment .comment { background: #e8b8ae; }
+.comment .comment .comment .comment { background: #e39c8c; }
+.comment .comment .comment .comment .comment { background: #e8b8ae; }
+
+/* Comment form */
+form.comment {
+  display: block;
+  background: #e8b8ae;
+  padding: 20px;
+  margin-top: 12px;
+  box-sizing: content-box;
+}
+form.comment textarea {
+  resize: none;
+  overflow: hidden;
+  min-height: 50px;
+  width: 100%;
+  font-family: "Merriweather", serif;
+  font-size: 14px;
+  color: black;
+}
+/*form.comment input[type="submit"] {
+  display: block;
+  margin: auto;
+  margin-top: 10px;
+}*/
+form.comment.reply {
+  display: none;
 }

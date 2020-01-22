@@ -1,9 +1,36 @@
 <div class="comment">
 	<header>
-		<span class="name">{{ comment.name.as_ref().or(comment.author.as_ref()).unwrap()|e }}</span>
+		<span class="name">{{ comment.author(connection).unwrap_or_default()|e }}</span>
 		<time title="{{ comment.date.format("%c") }}">{{ comment.date.format("%d %b %y %H:%M") }}</time>
 	</header>
-	{{ comment.content|escape }}
+	{% if comment.visible -%}
+		{{ comment.content|escape }}
+	{%- else -%}
+		[deleted]
+	{%- endif %}
+	<ul class="links">
+		<li><button class="link-like" onclick="reply(this)">reply</a></li>
+		{% if session.is_some() && comment.author.is_some() && comment.author.as_ref().unwrap().as_str() == session.unwrap().user.as_str() -%}
+		<li><button class="link-like" onclick="remove({{ comment.id }})">remove</button></li>
+		{% endif -%}
+	</ul>
+
+	<form class="comment reply" onsubmit="send(this); return false;">
+		<input type="hidden" name="article" data-type="int" value="{{ article_id }}">
+		<input type="hidden" name="visible" data-type="bool" value="true">
+		<input type="hidden" name="parent" data-type="int" value="{{ comment.id }}">
+		<div class="error"></div>
+		{% match session -%}
+		{%- when Some with (session) -%}
+			<input type="hidden" name="author" value="{{ session.user }}">
+		{%- when None -%}
+			<label>Name: <input type="text" name="name" required></label>
+		{% endmatch %}
+		<textarea name="content" oninput="auto_resize(this)"></textarea>
+		<input type="submit" value="Submit">
+		<input type="button" value="Cancel" onclick="this.parentNode.style.display = 'none'">
+	</form>
+
 	{% for child in children %}
 		{{ child.render().unwrap() }}
 	{% endfor %}

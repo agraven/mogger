@@ -1,4 +1,3 @@
-use failure::err_msg;
 use gotham::{
     helpers::http::response::{create_empty_response, create_response},
     state::{FromState, State},
@@ -7,14 +6,12 @@ use hyper::{Body, Response, StatusCode};
 use mime::APPLICATION_JSON as JSON;
 
 use crate::{
-    user,
-    user::{Login, NewUser},
+    user::{self, Login, NewUser},
     DbConnection,
 };
 
 pub fn create(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Error> {
-    let arc = DbConnection::borrow_from(state).get();
-    let connection = &arc.lock().or(Err(err_msg("async error")))?;
+    let connection = &DbConnection::borrow_from(state).lock()?;
 
     let user: NewUser = serde_json::from_slice(&post)?;
 
@@ -23,8 +20,7 @@ pub fn create(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::E
 }
 
 pub fn login(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Error> {
-    let arc = DbConnection::borrow_from(state).get();
-    let connection = &arc.lock().or(Err(err_msg("async error")))?;
+    let connection = &DbConnection::borrow_from(state).lock()?;
 
     let login: Login = serde_json::from_slice(&post)?;
     let response = match login.login(&connection)? {

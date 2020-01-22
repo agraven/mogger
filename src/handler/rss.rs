@@ -1,6 +1,5 @@
 //! Handler for serving an rss feed
 use chrono::{DateTime, NaiveDateTime, Utc};
-use failure::err_msg;
 use gotham::helpers::http::response::create_response;
 use gotham::state::{FromState, State};
 use hyper::{Body, Response, StatusCode};
@@ -34,9 +33,9 @@ fn date_format(date: NaiveDateTime) -> String {
         .to_string()
 }
 
+/// Serves an RSS encoded feed of articles
 pub fn rss(state: &State) -> Result<Response<Body>, failure::Error> {
-    let arc = DbConnection::borrow_from(&state).get();
-    let connection = &arc.lock().or(Err(err_msg("async error")))?;
+    let connection = &DbConnection::borrow_from(state).lock()?;
 
     let articles = article::list(connection)?;
     let last_change = articles.get(0).map(|art| date_format(art.date));

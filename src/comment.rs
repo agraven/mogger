@@ -1,7 +1,7 @@
 use chrono::NaiveDateTime;
 use diesel::{pg::PgConnection as Connection, prelude::*, result::Error as DieselError, Queryable};
 
-use crate::schema::comments;
+use crate::{schema::comments, user};
 
 #[derive(Clone, Debug, Serialize, Deserialize, Queryable, Identifiable)]
 pub struct Comment {
@@ -29,7 +29,7 @@ pub struct Comment {
 pub struct NewComment {
     pub parent: Option<i32>,
     pub article: i32,
-    pub author: String,
+    pub author: Option<String>,
     pub name: Option<String>,
     pub content: String,
     pub visible: bool,
@@ -38,7 +38,6 @@ pub struct NewComment {
 #[derive(Clone, Debug, Serialize, Deserialize, AsChangeset)]
 #[table_name = "comments"]
 pub struct CommentChanges {
-    pub author: String,
     pub name: Option<String>,
     pub content: String,
     pub visible: bool,
@@ -49,6 +48,16 @@ pub struct CommentChanges {
 pub struct Node {
     pub comment: Comment,
     pub children: Vec<Node>,
+}
+
+impl Comment {
+    pub fn author(&self, connection: &Connection) -> Result<String, failure::Error> {
+        if let Some(name) = self.name.as_ref() {
+            return Ok(name.to_owned());
+        }
+        let user = user::get(connection, &self.author.as_ref().unwrap())?;
+        Ok(user.name)
+    }
 }
 
 impl Node {
@@ -111,8 +120,8 @@ pub fn view(connection: &Connection, id: i32, context: u32) -> Result<Option<Nod
     use crate::schema::comments::dsl;
 
     // Get article id from comment with matching id
-    let article = dsl::comments.find(id).first::<Comment>(connection)?.article;
-    let list = list_flat(connection, article)?;
+    let article_id = dsl::comments.find(id).first::<Comment>(connection)?.article;
+    let list = list_flat(connection, article_id)?;
 
     let mut comment = list.iter().find(|comment| comment.id == id);
 
@@ -129,6 +138,12 @@ pub fn view(connection: &Connection, id: i32, context: u32) -> Result<Option<Nod
     };
 
     Ok(node)
+}
+
+pub fn view_single(connection: &Connection, id: i32) -> Result<Option<Comment>, DieselError> {
+    use crate::schema::comments::dsl;
+
+    dsl::comments.find(id).first(connection).optional()
 }
 
 pub fn submit(connection: &Connection, comment: NewComment) -> Result<usize, DieselError> {

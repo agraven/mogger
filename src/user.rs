@@ -147,13 +147,13 @@ impl Middleware for SessionMiddleware {
         C: FnOnce(State) -> Box<HandlerFuture>,
     {
         let put_session = |state: &mut State| -> Result<(), failure::Error> {
-            let arc = DbConnection::borrow_from(&state).get();
-            let connection = &arc.lock().or(Err(failure::err_msg("async error")))?;
+            let connection = DbConnection::borrow_from(&state).lock()?;
             let cookie = CookieJar::borrow_from(&state)
                 .get("session")
                 .map(|cookie| cookie.value());
             if let Some(id) = cookie {
-                if let Some(session) = Session::from_id(id, connection)? {
+                if let Some(session) = Session::from_id(id, &connection)? {
+                    std::mem::drop(connection);
                     state.put(session);
                 }
             }

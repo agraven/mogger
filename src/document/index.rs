@@ -1,7 +1,6 @@
 use askama::Template;
 use cookie::Cookie;
 use diesel::PgConnection as Connection;
-use failure::err_msg;
 use gotham::{
     helpers::http::response::create_temporary_redirect as temp_redirect,
     state::{FromState, State},
@@ -26,8 +25,7 @@ pub struct Index<'a> {
 }
 
 pub fn handler(state: &State) -> Result<Response<Body>, failure::Error> {
-    let arc = DbConnection::borrow_from(state).get();
-    let connection = &arc.lock().or(Err(err_msg("async error")))?;
+    let connection = &DbConnection::borrow_from(state).lock()?;
     let articles = article::list(connection)?;
 
     let session = Session::try_borrow_from(state);
@@ -55,6 +53,9 @@ pub struct ArticleTemplate<'a> {
 pub struct CommentTemplate<'a> {
     comment: &'a comment::Comment,
     children: Vec<CommentTemplate<'a>>,
+    connection: &'a Connection,
+    session: Option<&'a Session>,
+    article_id: i32,
 }
 
 #[derive(Template, Clone)]
@@ -69,24 +70,39 @@ pub struct LoginResultTemplate<'a> {
     session: Option<&'a Session>,
 }
 
-impl<'a> From<&'a comment::Node> for CommentTemplate<'a> {
-    fn from(tree: &'a comment::Node) -> Self {
+impl<'a> CommentTemplate<'a> {
+    fn from_node(
+        tree: &'a comment::Node,
+        connection: &'a Connection,
+        session: Option<&'a Session>,
+        article_id: i32,
+    ) -> Self {
         CommentTemplate {
             comment: &tree.comment,
-            children: tree.children.iter().map(CommentTemplate::from).collect(),
+            children: tree
+                .children
+                .iter()
+                .map(|child| CommentTemplate::from_node(child, connection, session, article_id))
+                .collect(),
+            connection,
+            session,
+            article_id,
         }
     }
 }
 
 pub fn article(state: &State) -> Result<Response<Body>, failure::Error> {
-    let arc = DbConnection::borrow_from(state).get();
-    let connection = &arc.lock().or(Err(err_msg("async error")))?;
+    let connection = &DbConnection::borrow_from(state).lock()?;
     let id = &ArticlePath::borrow_from(state).id;
+    let session = Session::try_borrow_from(state);
 
     let article = article::view(connection, &id)?;
     let id = ArticlePath::borrow_from(state).find_id(connection)?;
     let comments = comment::list(connection, id)?;
-    let comments_template = comments.iter().map(CommentTemplate::from).collect();
+    let comments_template = comments
+        .iter()
+        .map(|child| CommentTemplate::from_node(child, connection, session, article.id))
+        .collect();
     let author = article.user(connection)?;
     let template = ArticleTemplate {
         article,
@@ -106,8 +122,7 @@ pub fn login(state: &State) -> Result<Response<Body>, failure::Error> {
 }
 
 pub fn login_post(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Error> {
-    let arc = DbConnection::borrow_from(state).get();
-    let connection = &arc.lock().or(Err(err_msg("async error")))?;
+    let connection = &DbConnection::borrow_from(state).lock()?;
     let credentials: Login = serde_urlencoded::from_bytes(&post)?;
     let new_session = credentials.login(connection)?;
 
@@ -149,8 +164,7 @@ struct SignupResultTemplate<'a> {
 
 pub fn signup_post(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Error> {
     let new_user: NewUser = serde_urlencoded::from_bytes(&post)?;
-    let arc = DbConnection::borrow_from(state).get();
-    let connection = &arc.lock().or(Err(err_msg("async error")))?;
+    let connection = &DbConnection::borrow_from(state).lock()?;
     // TODO: check password strength and other input validation
     user::create(connection, new_user.clone())?;
     let credentials: Login = new_user.into();
@@ -184,8 +198,7 @@ pub fn edit(state: &State) -> Result<Response<Body>, failure::Error> {
 pub fn edit_post(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Error> {
     let new_article: NewArticle = serde_urlencoded::from_bytes(&post)?;
     let session = Session::try_borrow_from(state);
-    let arc = DbConnection::borrow_from(state).get();
-    let connection = &arc.lock().map_err(|_| err_msg("async error"))?;
+    let connection = &DbConnection::borrow_from(state).lock()?;
 
     // validate submitted username
     match session {

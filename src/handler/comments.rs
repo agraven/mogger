@@ -12,6 +12,7 @@ use crate::{
     comment,
     comment::{CommentChanges, NewComment},
     handler::articles::ArticlePath,
+    user::Session,
     DbConnection,
 };
 
@@ -26,8 +27,7 @@ pub struct Context {
 }
 
 pub fn list(state: &State) -> Result<Response<Body>, failure::Error> {
-    let arc = DbConnection::borrow_from(state).get();
-    let connection = &arc.lock().or(Err(err_msg("async error")))?;
+    let connection = &DbConnection::borrow_from(state).lock()?;
     let id = ArticlePath::borrow_from(&state).find_id(connection)?;
 
     let comments = comment::list(connection, id)?;
@@ -36,8 +36,7 @@ pub fn list(state: &State) -> Result<Response<Body>, failure::Error> {
 }
 
 pub fn view(state: &State) -> Result<Response<Body>, failure::Error> {
-    let arc = DbConnection::borrow_from(state).get();
-    let connection = &arc.lock().or(Err(err_msg("async error")))?;
+    let connection = &DbConnection::borrow_from(state).lock()?;
     let query = Context::borrow_from(&state);
     let context = query.context.unwrap_or(0);
     let id = CommentPath::borrow_from(&state).id;
@@ -48,8 +47,7 @@ pub fn view(state: &State) -> Result<Response<Body>, failure::Error> {
 }
 
 pub fn submit(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Error> {
-    let arc = DbConnection::borrow_from(state).get();
-    let connection = &arc.lock().or(Err(err_msg("async error")))?;
+    let connection = &DbConnection::borrow_from(state).lock()?;
 
     let new: NewComment = serde_json::from_slice(&post)?;
 
@@ -58,8 +56,7 @@ pub fn submit(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::E
 }
 
 pub fn edit(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Error> {
-    let arc = DbConnection::borrow_from(state).get();
-    let connection = &arc.lock().or(Err(err_msg("async error")))?;
+    let connection = &DbConnection::borrow_from(state).lock()?;
     let id = CommentPath::borrow_from(state).id;
 
     let changes: CommentChanges = serde_json::from_slice(&post)?;
@@ -69,9 +66,16 @@ pub fn edit(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Err
 }
 
 pub fn delete(state: &State) -> Result<Response<Body>, failure::Error> {
-    let arc = DbConnection::borrow_from(&state).get();
-    let connection = &arc.lock().or(Err(err_msg("async error")))?;
+    let connection = &DbConnection::borrow_from(state).lock()?;
     let id = CommentPath::borrow_from(state).id;
+    let session = Session::try_borrow_from(state);
+
+    // FIXME
+    // Check for same user
+    /*let comment = comment::view_single(connection, id)?;
+    if comment.and_then(|c| c.author) == session.map(|s| s.user.clone()) {
+        return Err(err_msg("Unauthorized"));
+    }*/
 
     comment::delete(connection, id)?;
     Ok(create_empty_response(&state, StatusCode::OK))

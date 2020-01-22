@@ -1,6 +1,5 @@
 use diesel::result::Error as DieselError;
 use diesel::PgConnection as Connection;
-use failure::err_msg;
 use gotham::{
     helpers::http::response::{create_empty_response, create_response},
     state::{FromState, State},
@@ -29,8 +28,7 @@ impl ArticlePath {
 }
 
 pub fn list(state: &State) -> Result<Response<Body>, failure::Error> {
-    let arc = DbConnection::borrow_from(&state).get();
-    let connection = &arc.lock().or(Err(err_msg("async error")))?;
+    let connection = &DbConnection::borrow_from(state).lock()?;
 
     let articles = article::list(&connection)?;
     let content = serde_json::to_string(&articles)?;
@@ -40,8 +38,8 @@ pub fn list(state: &State) -> Result<Response<Body>, failure::Error> {
 
 pub fn view(state: &State) -> Result<Response<Body>, failure::Error> {
     let id = &ArticlePath::borrow_from(&state).id;
-    let arc = DbConnection::borrow_from(&state).get();
-    let connection = &arc.lock().or(Err(err_msg("async error")))?;
+
+    let connection = &DbConnection::borrow_from(&state).lock()?;
 
     let article = article::view(connection, id)?;
     let content = serde_json::to_string(&article)?;
@@ -50,8 +48,7 @@ pub fn view(state: &State) -> Result<Response<Body>, failure::Error> {
 }
 
 pub fn submit(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Error> {
-    let arc = DbConnection::borrow_from(state).get();
-    let connection = &arc.lock().or(Err(err_msg("async error")))?;
+    let connection = &DbConnection::borrow_from(&state).lock()?;
 
     let new: NewArticle = serde_json::from_slice(&post)?;
 
@@ -60,8 +57,7 @@ pub fn submit(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::E
 }
 
 pub fn edit(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Error> {
-    let arc = DbConnection::borrow_from(&state).get();
-    let connection = &arc.lock().or(Err(err_msg("async error")))?;
+    let connection = &DbConnection::borrow_from(&state).lock()?;
 
     let id = ArticlePath::borrow_from(&state).find_id(connection)?;
     let changes: NewArticle = serde_json::from_slice(&post)?;
@@ -72,8 +68,7 @@ pub fn edit(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Err
 
 pub fn delete(state: &State) -> Result<Response<Body>, failure::Error> {
     let id = &ArticlePath::borrow_from(&state).id;
-    let arc = DbConnection::borrow_from(&state).get();
-    let connection = &arc.lock().or(Err(err_msg("async error")))?;
+    let connection = &DbConnection::borrow_from(&state).lock()?;
 
     article::delete(connection, id)?;
     Ok(create_empty_response(&state, StatusCode::OK))

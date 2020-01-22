@@ -75,6 +75,13 @@ impl DbConnection {
     pub fn get(&self) -> Arc<Mutex<Connection>> {
         self.connection.clone()
     }
+
+    pub fn lock(&self) -> Result<std::sync::MutexGuard<Connection>, failure::Error> {
+        match self.connection.lock() {
+            Ok(lock) => Ok(lock),
+            Err(_) => Err(failure::err_msg("failed to get lock")),
+        }
+    }
 }
 
 fn router() -> Router {
@@ -83,7 +90,7 @@ fn router() -> Router {
     // STATIC_DIR compile-time environment variable if defined, otherwise
     // local directory 'static'
     let assets_dir = std::env::var("STATIC_DIR")
-        .unwrap_or(option_env!("STATIC_DIR").unwrap_or("static").to_owned());
+        .unwrap_or_else(|_| option_env!("STATIC_DIR").unwrap_or("static").to_owned());
 
     // Set up shared state
     let connection = DbConnection::new();

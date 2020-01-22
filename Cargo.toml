@@ -11,13 +11,13 @@ edition = "2018"
 lto = true
 
 [dependencies]
-askama = { version = "0.8", features = ["with-gotham"] }
-base64 = "0.10"
-bcrypt = "0.4"
+askama = { version = "0.8" }
+base64 = "0.11"
+bcrypt = "0.6"
 chrono = { version = "0.4.6", features = ["serde"] }
 cookie = { version = "0.12", features = ["percent-encode"] }
 diesel = { version = "1.4.1", features = ["chrono", "postgres"] }
-failure = "0.1.5"
+failure = "0.1.6"
 futures = "0.1.25"
 http = "0.1"
 hyper = "0.12"
@@ -28,6 +28,6 @@ rand = "0.6"
 rss = { version = "1.7", features = ["serde"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-serde_urlencoded = "0.5"
+serde_urlencoded = "0.6"
 sha2 = "0.8"
 time = "0.1"

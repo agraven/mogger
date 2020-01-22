@@ -40,7 +40,7 @@ impl Article {
     }
 
     /// Get a short slice of the article's contents.
-    pub fn description<'a>(&'a self) -> &'a str {
+    pub fn description(&self) -> &str {
         let mut end = DESCRIPTION_LEN;
         while !self.content.is_char_boundary(end) {
             end -= 1;
@@ -49,7 +49,7 @@ impl Article {
     }
 
     /// Used when displaying a preview of the article's contents in a list of articles.
-    pub fn preview<'a>(&'a self) -> &'a str {
+    pub fn preview(&self) -> &str {
         let len = self.content.len();
         if len < PREVIEW_LEN {
             return &self.content[..len];
@@ -78,6 +78,7 @@ pub struct NewArticle {
     pub url: String,
     pub content: String,
     pub author: String,
+    #[serde(default)]
     pub visible: bool,
 }
 
