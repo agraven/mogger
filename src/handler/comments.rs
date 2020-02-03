@@ -1,4 +1,3 @@
-use failure::err_msg;
 use gotham::{
     helpers::http::response::{create_empty_response, create_response},
     state::{FromState, State},
@@ -68,7 +67,7 @@ pub fn edit(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Err
 pub fn delete(state: &State) -> Result<Response<Body>, failure::Error> {
     let connection = &DbConnection::borrow_from(state).lock()?;
     let id = CommentPath::borrow_from(state).id;
-    let session = Session::try_borrow_from(state);
+    let _session = Session::try_borrow_from(state);
 
     // FIXME
     // Check for same user
@@ -78,5 +77,13 @@ pub fn delete(state: &State) -> Result<Response<Body>, failure::Error> {
     }*/
 
     comment::delete(connection, id)?;
+    Ok(create_empty_response(&state, StatusCode::OK))
+}
+
+pub fn purge(state: &State) -> Result<Response<Body>, failure::Error> {
+    let connection = &DbConnection::borrow_from(state).lock()?;
+    let id = CommentPath::borrow_from(state).id;
+
+    comment::purge(connection, id)?;
     Ok(create_empty_response(&state, StatusCode::OK))
 }

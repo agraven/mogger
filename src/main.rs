@@ -166,7 +166,11 @@ fn router() -> Router {
                 route
                     .get("/delete/:id")
                     .with_path_extractor::<comments::CommentPath>()
-                    .to(handler!(comments::delete))
+                    .to(handler!(comments::delete));
+
+                route.get("/purge/:id")
+                    .with_path_extractor::<comments::CommentPath>()
+                    .to(handler!(comments::purge))
             });
 
             route.scope("/users", |route| {

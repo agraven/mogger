@@ -69,6 +69,14 @@
 			request.open("GET", "/api/comments/delete/" + id);
 			request.send();
 		}
+
+		function purge(id) {
+			if (confirm("This will permanently delete the selected comment and cannot be undone. Continue?")) {
+				let request = new XMLHttpRequest();
+				request.open("GET", "/api/comments/purge/" + id);
+				request.send();
+			}
+		}
 	</script>
 {% endblock %}
 

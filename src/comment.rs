@@ -172,6 +172,20 @@ pub fn delete(connection: &Connection, id: i32) -> Result<usize, DieselError> {
         .execute(connection)
 }
 
+/// Delete a comment from the database. The target comment must have no direct children.
+pub fn purge(connection: &Connection, id: i32) -> Result<usize, failure::Error> {
+    use crate::schema::comments::dsl;
+
+    // Check if the comment has any direct children, and refuse to purge it if so.
+    // TODO: Explicit error
+    let children_count: i64 = dsl::comments.filter(dsl::parent.eq(id)).count().first(connection)?;
+    if children_count == 0 {
+        Ok(diesel::delete(dsl::comments.find(id)).execute(connection)?)
+    } else {
+        Err(failure::err_msg("Can't purge comment with direct children"))
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use chrono::Utc;

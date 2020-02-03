@@ -12,6 +12,7 @@
 		<li><button class="link-like" onclick="reply(this)">reply</a></li>
 		{% if session.is_some() && comment.author.is_some() && comment.author.as_ref().unwrap().as_str() == session.unwrap().user.as_str() -%}
 		<li><button class="link-like" onclick="remove({{ comment.id }})">remove</button></li>
+		<li><button class="link-like" onclick="purge({{ comment.id }})">purge</button></li>
 		{% endif -%}
 	</ul>
 
