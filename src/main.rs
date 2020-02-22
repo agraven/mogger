@@ -12,7 +12,8 @@
 //!         * `/view/<id>` - Gets the comment with `id`
 //!         * `/submit` - Submits a comment
 //!         * `/edit/<id>` - Edits the comment with `id`
-//!         * `/delete/<id>` - Deletes (i.e. marks as hidden) the selected comment
+//!         * `/delete/<id>` - Deletes the selected comment (i.e. marks it as hidden)
+//!         * `/purge/<id>` - Purges the selected comment (i.e. removes from the database)
 //!     * `/users` - User handling
 //!         * `/create` - Create a user
 //! * `/feed.rss` - RSS feed
@@ -168,7 +169,8 @@ fn router() -> Router {
                     .with_path_extractor::<comments::CommentPath>()
                     .to(handler!(comments::delete));
 
-                route.get("/purge/:id")
+                route
+                    .get("/purge/:id")
                     .with_path_extractor::<comments::CommentPath>()
                     .to(handler!(comments::purge))
             });
