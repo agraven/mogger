@@ -15,8 +15,10 @@ askama = "0.9"
 base64 = "0.11"
 bcrypt = "0.6"
 chrono = { version = "0.4.6", features = ["serde"] }
+comrak = "0.7"
 cookie = { version = "0.12", features = ["percent-encode"] }
 diesel = { version = "1.4.1", features = ["chrono", "postgres"] }
+diesel-derive-enum = { version = "0.4", features = ["postgres"] }
 failure = "0.1.6"
 futures = "0.1.25"
 http = "0.1"

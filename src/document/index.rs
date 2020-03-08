@@ -9,10 +9,14 @@ use hyper::{header, Body, Response, StatusCode};
 
 use super::TemplateExt;
 use crate::{
-    article::{self, Article, NewArticle},
+    article::{self, Article, ArticleChanges, NewArticle},
     comment,
-    handler::articles::ArticlePath,
-    user::{self, Login, NewUser, Session},
+    handler::articles::{ArticleIdPath, ArticlePath},
+    user::{
+        self, Login, NewUser, Permission,
+        Permission::{CreateArticle, EditArticle, EditForeignArticle},
+        Session,
+    },
     DbConnection,
 };
 
@@ -46,6 +50,7 @@ pub struct ArticleTemplate<'a> {
     author_name: String,
     comments: Vec<CommentTemplate<'a>>,
     session: Option<&'a Session>,
+    connection: &'a Connection,
 }
 
 #[derive(Template)]
@@ -62,12 +67,14 @@ pub struct CommentTemplate<'a> {
 #[template(path = "login.html")]
 pub struct LoginTemplate<'a> {
     session: Option<&'a Session>,
+    connection: &'a Connection,
 }
 
 #[derive(Template, Clone)]
 #[template(path = "login-result.html")]
 pub struct LoginResultTemplate<'a> {
     session: Option<&'a Session>,
+    connection: &'a Connection,
 }
 
 impl<'a> CommentTemplate<'a> {
@@ -108,15 +115,18 @@ pub fn article(state: &State) -> Result<Response<Body>, failure::Error> {
         article,
         author_name: author.name,
         comments: comments_template,
-        session: Session::try_borrow_from(state),
+        session,
+        connection,
     };
     let response = template.to_response(state);
     Ok(response)
 }
 
 pub fn login(state: &State) -> Result<Response<Body>, failure::Error> {
+    let connection = &DbConnection::borrow_from(state).lock()?;
     Ok(LoginTemplate {
         session: Session::try_borrow_from(state),
+        connection,
     }
     .to_response(state))
 }
@@ -128,6 +138,7 @@ pub fn login_post(state: &State, post: Vec<u8>) -> Result<Response<Body>, failur
 
     let mut response = LoginResultTemplate {
         session: new_session.as_ref(),
+        connection,
     }
     .to_response(state);
 
@@ -147,11 +158,14 @@ pub fn login_post(state: &State, post: Vec<u8>) -> Result<Response<Body>, failur
 #[template(path = "signup.html")]
 struct SignupTemplate<'a> {
     session: Option<&'a Session>,
+    connection: &'a Connection,
 }
 
 pub fn signup(state: &State) -> Result<Response<Body>, failure::Error> {
+    let connection = &DbConnection::borrow_from(state).lock()?;
     Ok(SignupTemplate {
         session: Session::try_borrow_from(state),
+        connection,
     }
     .to_response(state))
 }
@@ -160,6 +174,7 @@ pub fn signup(state: &State) -> Result<Response<Body>, failure::Error> {
 #[template(path = "signup-result.html")]
 struct SignupResultTemplate<'a> {
     session: Option<&'a Session>,
+    connection: &'a Connection,
 }
 
 pub fn signup_post(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Error> {
@@ -172,6 +187,7 @@ pub fn signup_post(state: &State, post: Vec<u8>) -> Result<Response<Body>, failu
     let session = credentials.login(connection)?.unwrap();
     let mut response = SignupResultTemplate {
         session: Some(&session),
+        connection,
     }
     .to_response(state);
     let cookie = Cookie::build("session", session.id).finish();
@@ -186,29 +202,60 @@ pub fn signup_post(state: &State, post: Vec<u8>) -> Result<Response<Body>, failu
 #[template(path = "edit.html")]
 struct EditTemplate<'a> {
     session: Option<&'a Session>,
+    connection: &'a Connection,
+    article: Option<Article>,
 }
 
 pub fn edit(state: &State) -> Result<Response<Body>, failure::Error> {
+    let connection = &DbConnection::borrow_from(state).lock()?;
+    let article = match ArticleIdPath::try_borrow_from(state) {
+        Some(path) => Some(article::view(connection, &path.id.to_string())?),
+        None => None,
+    };
     Ok(EditTemplate {
         session: Session::try_borrow_from(state),
+        connection,
+        article,
     }
     .to_response(state))
 }
 
 pub fn edit_post(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Error> {
-    let new_article: NewArticle = serde_urlencoded::from_bytes(&post)?;
     let session = Session::try_borrow_from(state);
-    let connection = &DbConnection::borrow_from(state).lock()?;
+    let conn = &DbConnection::borrow_from(state).lock()?;
 
-    // validate submitted username
-    match session {
-        Some(ref session) if session.user == new_article.author => (),
-        _ => return Err(failure::err_msg("Wrong user")),
-    }
-    // TODO: permission check
-    // TODO: url validation
-    article::submit(connection, &new_article)?;
-    let mut response = temp_redirect(state, format!("/article/{}", new_article.url));
+    let url = if let Some(path) = ArticleIdPath::try_borrow_from(state) {
+        let changes: ArticleChanges = serde_urlencoded::from_bytes(&post)?;
+
+        // Check permissions
+        match session {
+            Some(s)
+                if s.allowed(EditForeignArticle, conn)?
+                    || s.allowed(EditArticle, conn)?
+                        && s.user == article::author(conn, path.id)? =>
+            {
+                ()
+            }
+            _ => return Err(failure::err_msg("Permission denied")),
+        };
+
+        article::edit(conn, path.id, &changes)?;
+        changes.url
+    } else {
+        let new_article: NewArticle = serde_urlencoded::from_bytes(&post)?;
+
+        match session {
+            Some(session) if session.allowed(CreateArticle, conn)? => (),
+            _ => return Err(failure::err_msg("Permission denied")),
+        }
+
+        // TODO: url server side format validation
+        article::submit(conn, &new_article)?;
+        new_article.url
+    };
+    // Redirect to page for the new article
+    let mut response = temp_redirect(state, format!("/article/{}", url));
+    // Force method to be GET
     *response.status_mut() = StatusCode::SEE_OTHER;
     Ok(response)
 }

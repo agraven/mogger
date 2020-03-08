@@ -2,6 +2,7 @@ use bcrypt::BcryptError;
 use chrono::{Duration, NaiveDateTime, Utc};
 use cookie::CookieJar;
 use diesel::{prelude::*, result::Error as DieselError, PgConnection as Connection};
+use diesel_derive_enum::DbEnum;
 use futures::future;
 use gotham::{
     handler::HandlerFuture,
@@ -14,7 +15,7 @@ use rand::prelude::*;
 use sha2::{Digest, Sha256};
 
 use crate::{
-    schema::{sessions, users},
+    schema::{groups, sessions, users},
     DbConnection,
 };
 
@@ -33,12 +34,26 @@ pub struct User {
     pub name: String,
     /// The user's email address
     pub email: String,
+    /// The group the user belongs to
+    group: String,
 }
 
 impl User {
     /// Verify the supplied password matches the users
     pub fn verify(&self, password: &str) -> Result<bool, BcryptError> {
         verify(password, &self.salt, &self.hash)
+    }
+
+    /// Checks if a user has a given permission.
+    pub fn allowed(
+        &self,
+        permission: Permission,
+        connection: &Connection,
+    ) -> Result<bool, DieselError> {
+        use crate::schema::groups::dsl;
+
+        let group: Group = dsl::groups.find(&self.group).first(connection)?;
+        Ok(group.permissions.contains(&permission) || group.permissions.contains(&Permission::All))
     }
 }
 
@@ -67,6 +82,7 @@ impl NewUser {
             salt: salt.into_vec(),
             name: self.name,
             email: self.email,
+            group: String::from("default"),
         }
     }
 }
@@ -135,6 +151,18 @@ impl Session {
             .find(id)
             .first(connection)
             .optional()
+    }
+
+    pub fn user(&self, connection: &Connection) -> Result<User, DieselError> {
+        get(connection, &self.user)
+    }
+
+    pub fn allowed(
+        &self,
+        permission: Permission,
+        connection: &Connection,
+    ) -> Result<bool, DieselError> {
+        self.user(connection)?.allowed(permission, connection)
     }
 }
 
@@ -215,3 +243,112 @@ pub fn get(connection: &Connection, id: &str) -> Result<User, DieselError> {
 
     dsl::users.find(id).first(connection)
 }
+
+/*table! {
+    use diesel::types::Varchar;
+    use diesel::sql_types::Array;
+    use super::PermissionMapping;
+    groups (name) {
+        name -> Varchar,
+        permissions -> Array<PermissionMapping>,
+    }
+}*/
+
+#[derive(Clone, Debug, Queryable, Identifiable, Insertable)]
+#[table_name = "groups"]
+pub struct Group {
+    id: String,
+    permissions: Vec<Permission>,
+}
+
+/*impl Queryable<groups::SqlType, diesel::pg::Pg> for Group {
+    type Row = (String, Vec<Permission>);
+
+    fn build(row: Self::Row) -> Self {
+        Group {
+            name: row.0,
+            permissions: row.1.iter().copied().collect(),
+        }
+    }
+}
+
+impl<DB> ToSql<diesel::types::Array<PermissionMapping, DB>> for BTreeSet<Permission>
+where
+    DB: diesel::backend::Backend
+{
+    fn to_sql<W: Write>(&self, out: &mut )
+}*/
+
+/// Represents a type of action that a user or group can be allowed or denied permission for
+#[derive(Clone, Copy, Debug, PartialEq, Eq, DbEnum)]
+pub enum Permission {
+    All,
+
+    CreateArticle,
+    EditArticle,
+    DeleteArticle,
+    EditForeignArticle,
+    DeleteForeignArticle,
+
+    CreateComment,
+    EditComment,
+    DeleteComment,
+    EditForeignComment,
+    DeleteForeignComment,
+
+    CreateUser,
+    EditForeignUser,
+    DeleteForeignUser,
+}
+
+/* turns out enums are feasible so i'm dropping the to/from text conversion
+impl Permission {
+    /// Gets a permission from its string representation
+    pub fn from_name(name: &str) -> Option<Self> {
+        use Permission::*;
+        match name {
+            "create_article" => CreateArticle,
+            "edit_article" => EditArticle,
+            "delete_article" => DeleteArticle,
+            "edit_foreign_article" => EditForeignArticle,
+            "delete_foreign_article" => DeleteForeignArticle,
+
+            "create_comment" => CreateComment,
+            "edit_comment" => EditComment,
+            "delete_comment" => DeleteComment,
+            "edit_foreign_comment" => EditForeignComment,
+            "delete_foreign_comment" => DeleteForeignComment,
+
+            "create_user" => CreateUser,
+            "edit_foreign_user" => EditForeignUser,
+            "delete_foreign_user" => DeleteForeignUser,
+
+            _ => return None,
+        }.into()
+    }
+}
+
+impl std::fmt::Display for Permission {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        use Permission::*;
+        let string = match *self {
+            CreateArticle => "create_article",
+            EditArticle => "edit_article",
+            DeleteArticle => "delete_article",
+            EditForeignArticle => "edit_foreign_article",
+            DeleteForeignArticle => "delete_foreign_article",
+
+            CreateComment => "create_comment",
+            EditComment => "edit_comment",
+            DeleteComment => "delete_comment",
+            EditForeignComment => "edit_foreign_comment",
+            DeleteForeignComment => "delete_foreign_comment",
+
+            CreateUser => "create_user",
+            EditForeignUser => "edit_foreign_user",
+            DeleteForeignUser => "delete_foreign_user",
+        };
+
+        write!(f, "{}", string)
+    }
+}*/

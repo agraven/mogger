@@ -87,8 +87,16 @@
 			<time title="{{ article.date.format("%c") }}" datetime="{{ article.date.format("%F %T") }}">
 				{{ article.date.format("%d %b %Y - %H:%M") }}
 			</time>
+			{% match session %}
+			{% when Some with (session) %}
+				{# TODO: extend this #}
+				{% if session.allowed(Permission::EditForeignArticle, connection).unwrap_or(false) %}
+					<div class="edit"><a href="/edit/{{ article.id }}">Edit this article</a></div>
+				{% endif %}
+			{% when None %}
+			{% endmatch %}
 		</header>
-		{{ article.content|escape }}
+		{{ article.formatted() }}
 	</article>
 
 	<form class="comment" onsubmit="send(this); return false;">

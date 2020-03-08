@@ -17,6 +17,9 @@
 //!     * `/users` - User handling
 //!         * `/create` - Create a user
 //! * `/feed.rss` - RSS feed
+
+#![allow(clippy::new_without_default)]
+
 #[macro_use]
 extern crate diesel;
 #[macro_use]
@@ -47,7 +50,10 @@ use gotham_derive::StateData;
 use http::status::StatusCode;
 use hyper::{Body, Response};
 
-use std::sync::{Arc, Mutex};
+use std::{
+    borrow::Cow,
+    sync::{Arc, Mutex},
+};
 
 use crate::user::SessionMiddleware;
 
@@ -90,8 +96,13 @@ fn router() -> Router {
     // STATIC_DIR environment varible if defined, otherwise
     // STATIC_DIR compile-time environment variable if defined, otherwise
     // local directory 'static'
-    let assets_dir = std::env::var("STATIC_DIR")
-        .unwrap_or_else(|_| option_env!("STATIC_DIR").unwrap_or("static").to_owned());
+    let assets_dir: Cow<str> = if let Ok(env) = std::env::var("STATIC_DIR") {
+        env.into()
+    } else if let Some(compile_env) = option_env!("STATIC_DIR") {
+        compile_env.into()
+    } else {
+        "static".into()
+    };
 
     // Set up shared state
     let connection = DbConnection::new();
@@ -127,6 +138,14 @@ fn router() -> Router {
         route.get("/edit").to(handler!(document::index::edit));
         route
             .post("/edit")
+            .to(body_handler!(document::index::edit_post));
+        route
+            .get("/edit/:id")
+            .with_path_extractor::<articles::ArticleIdPath>()
+            .to(handler!(document::index::edit));
+        route
+            .post("/edit/:id")
+            .with_path_extractor::<articles::ArticleIdPath>()
             .to(body_handler!(document::index::edit_post));
 
         route.scope("/api", |route| {
@@ -183,7 +202,7 @@ fn router() -> Router {
             });
         });
 
-        route.get("/file/*").to_dir(assets_dir);
+        route.get("/file/*").to_dir(&*assets_dir);
 
         route.get("/feed.rss").to(handler!(handler::rss::rss));
 

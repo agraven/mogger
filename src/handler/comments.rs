@@ -11,7 +11,10 @@ use crate::{
     comment,
     comment::{CommentChanges, NewComment},
     handler::articles::ArticlePath,
-    user::Session,
+    user::{
+        Permission::{DeleteComment, DeleteForeignComment, EditComment, EditForeignComment},
+        Session,
+    },
     DbConnection,
 };
 
@@ -58,6 +61,17 @@ pub fn edit(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Err
     let connection = &DbConnection::borrow_from(state).lock()?;
     let id = CommentPath::borrow_from(state).id;
 
+    match Session::try_borrow_from(state) {
+        Some(session)
+            if session.allowed(EditForeignComment, connection)?
+                || session.allowed(EditComment, connection)?
+                    && comment::author(connection, id)?.as_ref() == Some(&session.user) =>
+        {
+            ()
+        }
+        _ => return Err(failure::err_msg("Permission denied")),
+    };
+
     let changes: CommentChanges = serde_json::from_slice(&post)?;
 
     comment::edit(connection, id, changes)?;
@@ -65,9 +79,19 @@ pub fn edit(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Err
 }
 
 pub fn delete(state: &State) -> Result<Response<Body>, failure::Error> {
-    let connection = &DbConnection::borrow_from(state).lock()?;
+    let conn = &DbConnection::borrow_from(state).lock()?;
     let id = CommentPath::borrow_from(state).id;
-    let _session = Session::try_borrow_from(state);
+
+    match Session::try_borrow_from(state) {
+        Some(session)
+            if session.allowed(DeleteForeignComment, conn)?
+                || session.allowed(DeleteComment, conn)?
+                    && comment::author(conn, id)?.as_ref() == Some(&session.user) =>
+        {
+            ()
+        }
+        _ => return Err(failure::err_msg("Permission denied")),
+    };
 
     // FIXME
     // Check for same user
@@ -76,14 +100,19 @@ pub fn delete(state: &State) -> Result<Response<Body>, failure::Error> {
         return Err(err_msg("Unauthorized"));
     }*/
 
-    comment::delete(connection, id)?;
+    comment::delete(conn, id)?;
     Ok(create_empty_response(&state, StatusCode::OK))
 }
 
 pub fn purge(state: &State) -> Result<Response<Body>, failure::Error> {
-    let connection = &DbConnection::borrow_from(state).lock()?;
+    let conn = &DbConnection::borrow_from(state).lock()?;
     let id = CommentPath::borrow_from(state).id;
 
-    comment::purge(connection, id)?;
+    match Session::try_borrow_from(state) {
+        Some(session) if session.allowed(DeleteForeignComment, conn)? => (),
+        _ => return Err(failure::err_msg("Permission denied")),
+    };
+
+    comment::purge(conn, id)?;
     Ok(create_empty_response(&state, StatusCode::OK))
 }

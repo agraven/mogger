@@ -24,6 +24,13 @@ table! {
 }
 
 table! {
+    groups (id) {
+        id -> Varchar,
+        permissions -> Array<crate::user::PermissionMapping>,
+    }
+}
+
+table! {
     sessions (id) {
         id -> Varchar,
         user -> Varchar,
@@ -38,6 +45,7 @@ table! {
         salt -> Bytea,
         name -> Varchar,
         email -> Varchar,
+        group -> Varchar,
     }
 }
 
@@ -45,10 +53,6 @@ joinable!(articles -> users (author));
 joinable!(comments -> articles (article));
 joinable!(comments -> users (author));
 joinable!(sessions -> users (user));
+joinable!(users -> groups (group));
 
-allow_tables_to_appear_in_same_query!(
-    articles,
-    comments,
-    sessions,
-    users,
-);
+allow_tables_to_appear_in_same_query!(articles, comments, groups, sessions, users,);

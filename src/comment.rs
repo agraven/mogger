@@ -178,12 +178,21 @@ pub fn purge(connection: &Connection, id: i32) -> Result<usize, failure::Error> 
 
     // Check if the comment has any direct children, and refuse to purge it if so.
     // TODO: Explicit error
-    let children_count: i64 = dsl::comments.filter(dsl::parent.eq(id)).count().first(connection)?;
+    let children_count: i64 = dsl::comments
+        .filter(dsl::parent.eq(id))
+        .count()
+        .first(connection)?;
     if children_count == 0 {
         Ok(diesel::delete(dsl::comments.find(id)).execute(connection)?)
     } else {
         Err(failure::err_msg("Can't purge comment with direct children"))
     }
+}
+
+pub fn author(connection: &Connection, id: i32) -> Result<Option<String>, DieselError> {
+    use crate::schema::comments::dsl;
+
+    dsl::comments.select(dsl::author).find(id).first(connection)
 }
 
 #[cfg(test)]

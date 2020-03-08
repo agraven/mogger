@@ -1,9 +1,31 @@
+CREATE TYPE permission AS ENUM (
+	'all',
+	'create_article',
+	'edit_article',
+	'delete_article',
+	'edit_foreign_article',
+	'delete_foreign_article',
+	'create_comment',
+	'edit_comment',
+	'delete_comment',
+	'edit_foreign_comment',
+	'delete_foreign_comment',
+	'create_user',
+	'edit_foreign_user',
+	'delete_foreign_user'
+);
+
+CREATE TABLE groups (
+	id VARCHAR(255) PRIMARY KEY NOT NULL,
+	permissions permission[] NOT NULL
+);
 CREATE TABLE users (
 	id VARCHAR(255) PRIMARY KEY NOT NULL,
 	hash VARCHAR(255) NOT NULL,
 	salt bytea NOT NULL,
 	name VARCHAR(255) NOT NULL,
-	email VARCHAR(255) NOT NULL
+	email VARCHAR(255) NOT NULL,
+	"group" VARCHAR(255) REFERENCES groups(id) NOT NULL
 );
 CREATE TABLE articles (
 	id SERIAL PRIMARY KEY NOT NULL,
@@ -31,3 +53,9 @@ CREATE TABLE comments (
 	-- Must author xor name
 	CONSTRAINT chk_author CHECK ((author IS NULL) <> (name IS NULL))
 );
+
+INSERT INTO groups (id, permissions) VALUES 
+('admin', '{all}'),
+('author', '{create_article, edit_article, delete_article, create_comment, edit_comment, edit_foreign_comment, delete_comment, delete_foreign_comment}'),
+('default', '{create_comment, edit_comment, delete_comment}');
+

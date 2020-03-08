@@ -6,6 +6,7 @@
 	<meta charset="UTF-8"/>
 	<meta name="viewport" content="width=device-width, inital-scale=1.0"/>
 	<link rel="shortcut icon" href="/file/favicon.png" type="image/png">
+	<link rel="shortcut icon" href="/file/favicon.svg" sizes="any" type="image/svg+xml">
 	<link rel="stylesheet" href="/file/style.css" type="text/css">
 	{% block head %}{% endblock %}
 </head>
@@ -22,7 +23,9 @@
 				<li class="dropdown">
 					<span class="navbar-item">Welcome, {{ session.user }}</span>
 					<div class="dropdown-content">
+						{% if session.allowed(Permission::CreateArticle, connection).unwrap_or(false) %}
 						<a href="/edit">Create article</a>
+						{% endif %}
 						<a href="/logout">Log out</a>
 					</div>
 				</li>
