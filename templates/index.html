@@ -4,6 +4,18 @@
 {% endblock %}
 
 {% block content %}
+	{% if articles.is_empty() %}
+		<article>
+			No articles yet.
+			{% match session %}
+			{% when Some with (session) %}
+				{% if session.allowed(Permission::CreateArticle, connection).unwrap_or(false) %}
+					<p><a href="/edit">Write a new one?</a>
+				{% endif %}
+			{% when None %}
+			{% endmatch %}
+		</article>
+	{% endif %}
 	{% for article in articles %}
 		<article>
 			<header>

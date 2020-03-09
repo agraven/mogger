@@ -1,0 +1,2 @@
+database_url = "postgres://postgres@localhost/amandag"
+host_address = "localhost:6096"

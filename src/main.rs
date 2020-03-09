@@ -23,6 +23,8 @@
 #[macro_use]
 extern crate diesel;
 #[macro_use]
+extern crate diesel_migrations;
+#[macro_use]
 extern crate serde;
 
 pub mod article;
@@ -52,10 +54,20 @@ use hyper::{Body, Response};
 
 use std::{
     borrow::Cow,
+    path::Path,
     sync::{Arc, Mutex},
 };
 
 use crate::user::SessionMiddleware;
+
+/// Application wide settings defined in configuration file.
+#[derive(Deserialize)]
+struct Settings<'a> {
+    #[serde(borrow)]
+    database_url: Cow<'a, str>,
+    #[serde(borrow)]
+    host_address: Cow<'a, str>,
+}
 
 /// Response extender for 404 errors
 pub struct NotFound;
@@ -73,9 +85,9 @@ pub struct DbConnection {
 }
 
 impl DbConnection {
-    pub fn new() -> Self {
+    pub fn from_url(url: &str) -> Self {
         Self {
-            connection: Arc::new(Mutex::new(db::connect())),
+            connection: Arc::new(Mutex::new(db::connect(url).expect("database error"))),
         }
     }
 
@@ -91,13 +103,13 @@ impl DbConnection {
     }
 }
 
-fn router() -> Router {
+fn router(settings: &Settings) -> Router {
     // The directory static assets are served from. Is:
     // STATIC_DIR environment varible if defined, otherwise
     // STATIC_DIR compile-time environment variable if defined, otherwise
     // local directory 'static'
-    let assets_dir: Cow<str> = if let Ok(env) = std::env::var("STATIC_DIR") {
-        env.into()
+    let assets_dir: Cow<str> = if Path::new("/usr/share/mogger").is_dir() {
+        "/usr/share/mogger".into()
     } else if let Some(compile_env) = option_env!("STATIC_DIR") {
         compile_env.into()
     } else {
@@ -105,7 +117,7 @@ fn router() -> Router {
     };
 
     // Set up shared state
-    let connection = DbConnection::new();
+    let connection = DbConnection::from_url(&settings.database_url);
     let state_mw = StateMiddleware::new(connection);
     // Build pipeline
     let (chain, pipelines) = single_pipeline(
@@ -121,6 +133,13 @@ fn router() -> Router {
         route.get("/").to(handler!(document::index::handler));
 
         route
+            .get("/initial-setup")
+            .to(handler!(document::index::init_setup));
+        route
+            .post("/initial-setup")
+            .to(body_handler!(document::index::init_setup_post));
+
+        route
             .get("/article/:id")
             .with_path_extractor::<articles::ArticlePath>()
             .to(handler!(document::index::article));
@@ -129,6 +148,8 @@ fn router() -> Router {
         route
             .post("/login")
             .to(body_handler!(document::index::login_post));
+
+        route.get("/logout").to(handler!(document::index::logout));
 
         route.get("/signup").to(handler!(document::index::signup));
         route
@@ -212,7 +233,16 @@ fn router() -> Router {
 }
 
 fn main() {
-    let address = "127.0.0.1:6096";
+    // Read settings
+    let path = if Path::new("/etc/mogger/mogger.toml").is_file() {
+        Path::new("/etc/mogger/mogger.toml")
+    } else {
+        Path::new("mogger.toml")
+    };
+    let data = std::fs::read(path).expect("no config file");
+    let settings: Settings = toml::from_slice(&data).expect("bad config");
+    let address = settings.host_address.clone().into_owned();
+
     println!("Running at {}", address);
-    gotham::start(address, router())
+    gotham::start(address, router(&settings))
 }

@@ -70,6 +70,7 @@ pub struct NewUser {
     name: String,
     /// The user's email address
     email: String,
+    group: String,
 }
 
 impl NewUser {
@@ -82,7 +83,7 @@ impl NewUser {
             salt: salt.into_vec(),
             name: self.name,
             email: self.email,
-            group: String::from("default"),
+            group: self.group,
         }
     }
 }
@@ -242,6 +243,18 @@ pub fn get(connection: &Connection, id: &str) -> Result<User, DieselError> {
     use crate::schema::users::dsl;
 
     dsl::users.find(id).first(connection)
+}
+
+pub fn logout(connection: &Connection, session: &str) -> Result<usize, DieselError> {
+    use crate::schema::sessions::dsl;
+
+    diesel::delete(dsl::sessions.find(session)).execute(connection)
+}
+
+pub fn count(connection: &Connection) -> Result<i64, DieselError> {
+    use crate::schema::users::dsl::*;
+
+    users.count().first(connection)
 }
 
 /*table! {

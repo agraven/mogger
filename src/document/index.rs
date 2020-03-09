@@ -5,9 +5,9 @@ use gotham::{
     helpers::http::response::create_temporary_redirect as temp_redirect,
     state::{FromState, State},
 };
-use hyper::{header, Body, Response, StatusCode};
+use hyper::{header, StatusCode};
 
-use super::TemplateExt;
+use super::{DocumentResult, TemplateExt};
 use crate::{
     article::{self, Article, ArticleChanges, NewArticle},
     comment,
@@ -28,8 +28,14 @@ pub struct Index<'a> {
     connection: &'a Connection,
 }
 
-pub fn handler(state: &State) -> Result<Response<Body>, failure::Error> {
+pub fn handler(state: &State) -> DocumentResult {
     let connection = &DbConnection::borrow_from(state).lock()?;
+
+    // If there are no users, redirect to initial setup.
+    if user::count(connection)? <= 0 {
+        return Ok(temp_redirect(state, "/initial-setup"));
+    }
+
     let articles = article::list(connection)?;
 
     let session = Session::try_borrow_from(state);
@@ -98,7 +104,7 @@ impl<'a> CommentTemplate<'a> {
     }
 }
 
-pub fn article(state: &State) -> Result<Response<Body>, failure::Error> {
+pub fn article(state: &State) -> DocumentResult {
     let connection = &DbConnection::borrow_from(state).lock()?;
     let id = &ArticlePath::borrow_from(state).id;
     let session = Session::try_borrow_from(state);
@@ -122,7 +128,7 @@ pub fn article(state: &State) -> Result<Response<Body>, failure::Error> {
     Ok(response)
 }
 
-pub fn login(state: &State) -> Result<Response<Body>, failure::Error> {
+pub fn login(state: &State) -> DocumentResult {
     let connection = &DbConnection::borrow_from(state).lock()?;
     Ok(LoginTemplate {
         session: Session::try_borrow_from(state),
@@ -131,7 +137,7 @@ pub fn login(state: &State) -> Result<Response<Body>, failure::Error> {
     .to_response(state))
 }
 
-pub fn login_post(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Error> {
+pub fn login_post(state: &State, post: Vec<u8>) -> DocumentResult {
     let connection = &DbConnection::borrow_from(state).lock()?;
     let credentials: Login = serde_urlencoded::from_bytes(&post)?;
     let new_session = credentials.login(connection)?;
@@ -161,7 +167,7 @@ struct SignupTemplate<'a> {
     connection: &'a Connection,
 }
 
-pub fn signup(state: &State) -> Result<Response<Body>, failure::Error> {
+pub fn signup(state: &State) -> DocumentResult {
     let connection = &DbConnection::borrow_from(state).lock()?;
     Ok(SignupTemplate {
         session: Session::try_borrow_from(state),
@@ -177,7 +183,7 @@ struct SignupResultTemplate<'a> {
     connection: &'a Connection,
 }
 
-pub fn signup_post(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Error> {
+pub fn signup_post(state: &State, post: Vec<u8>) -> DocumentResult {
     let new_user: NewUser = serde_urlencoded::from_bytes(&post)?;
     let connection = &DbConnection::borrow_from(state).lock()?;
     // TODO: check password strength and other input validation
@@ -199,6 +205,38 @@ pub fn signup_post(state: &State, post: Vec<u8>) -> Result<Response<Body>, failu
 }
 
 #[derive(Template)]
+#[template(path = "logout.html")]
+struct LogoutTemplate<'a> {
+    connection: &'a Connection,
+    session: Option<&'a Session>,
+}
+
+pub fn logout(state: &State) -> DocumentResult {
+    let connection = &DbConnection::borrow_from(state).lock()?;
+    let session = Session::try_borrow_from(state);
+
+    if let Some(session) = session {
+        user::logout(connection, &session.id)?;
+    }
+
+    let mut response = LogoutTemplate {
+        connection,
+        session: None,
+    }
+    .to_response(state);
+
+    // Delete session cookie with Max-Age=0
+    let cookie = Cookie::build("session", "")
+        .max_age(time::Duration::zero())
+        .finish();
+    response
+        .headers_mut()
+        .append(header::SET_COOKIE, cookie.to_string().parse()?);
+
+    Ok(response)
+}
+
+#[derive(Template)]
 #[template(path = "edit.html")]
 struct EditTemplate<'a> {
     session: Option<&'a Session>,
@@ -206,7 +244,7 @@ struct EditTemplate<'a> {
     article: Option<Article>,
 }
 
-pub fn edit(state: &State) -> Result<Response<Body>, failure::Error> {
+pub fn edit(state: &State) -> DocumentResult {
     let connection = &DbConnection::borrow_from(state).lock()?;
     let article = match ArticleIdPath::try_borrow_from(state) {
         Some(path) => Some(article::view(connection, &path.id.to_string())?),
@@ -220,7 +258,7 @@ pub fn edit(state: &State) -> Result<Response<Body>, failure::Error> {
     .to_response(state))
 }
 
-pub fn edit_post(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Error> {
+pub fn edit_post(state: &State, post: Vec<u8>) -> DocumentResult {
     let session = Session::try_borrow_from(state);
     let conn = &DbConnection::borrow_from(state).lock()?;
 
@@ -258,4 +296,30 @@ pub fn edit_post(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure
     // Force method to be GET
     *response.status_mut() = StatusCode::SEE_OTHER;
     Ok(response)
+}
+
+#[derive(Template)]
+#[template(path = "initial-setup.html")]
+pub struct InitSetupTemplate<'a> {
+    session: Option<&'a Session>,
+    connection: &'a Connection,
+}
+
+pub fn init_setup(state: &State) -> DocumentResult {
+    let connection = &DbConnection::borrow_from(state).lock()?;
+    Ok(InitSetupTemplate {
+        session: Session::try_borrow_from(state),
+        connection,
+    }
+    .to_response(state))
+}
+
+pub fn init_setup_post(state: &State, post: Vec<u8>) -> DocumentResult {
+    {
+        let connection = &DbConnection::borrow_from(state).lock()?;
+        if user::count(connection)? > 0 {
+            return Err(failure::err_msg("Initial setup already complete"));
+        }
+    }
+    signup_post(state, post)
 }

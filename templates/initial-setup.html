@@ -1,15 +1,10 @@
 {% extends "root.html" %}
 
-{% block head %}
-	<link href="/file/form.css" rel="stylesheet" type="text/css">
-{% endblock %}
-
 {% block content %}
 	<article>
-		<header>
-			<h1>Sign up</h1>
-		</header>
-		<p>Create an account.
+		<header><h1>Create an admin user</h1></header>
+
+		This appears to be the first time you're using this site. Please create an admin user.
 		<form method="post">
 			<div>
 				<label for="user">Username: </label>
@@ -28,7 +23,7 @@
 				<input type="text" name="name" id="display-name" required>
 			</div>
 
-			<input type="hidden" name="group" value="default">
+			<input type="hidden" name="group" value="admin">
 
 			<div class="submit">
 				<input type="submit">

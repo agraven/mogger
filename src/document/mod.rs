@@ -6,6 +6,8 @@ use hyper::{Body, Response};
 
 pub mod index;
 
+pub type DocumentResult = Result<Response<Body>, failure::Error>;
+
 pub trait TemplateExt {
     fn to_response(&self, state: &State) -> Response<Body>;
 }
