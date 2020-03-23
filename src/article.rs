@@ -73,6 +73,10 @@ impl Article {
         &self.content[..end]
     }
 
+    pub fn author(&self, connection: &Connection) -> Result<String, DieselError> {
+        author(connection, self.id)
+    }
+
     pub fn comment_count(&self, connection: &Connection) -> Result<i64, DieselError> {
         comment_count(connection, self.id)
     }

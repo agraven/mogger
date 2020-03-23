@@ -69,6 +69,12 @@ struct Settings<'a> {
     host_address: Cow<'a, str>,
 }
 
+impl<'a> Settings<'a> {
+    pub fn from_slice(data: &'a [u8]) -> Result<Self, toml::de::Error> {
+        toml::from_slice(data)
+    }
+}
+
 /// Response extender for 404 errors
 pub struct NotFound;
 
@@ -79,6 +85,7 @@ impl ResponseExtender<Body> for NotFound {
     }
 }
 
+/// The wrapper for a database connection that can shared via gotham's state data
 #[derive(Clone, StateData)]
 pub struct DbConnection {
     connection: Arc<Mutex<Connection>>,
@@ -103,6 +110,7 @@ impl DbConnection {
     }
 }
 
+/// Builds the request router
 fn router(settings: &Settings) -> Router {
     // The directory static assets are served from. Is:
     // STATIC_DIR environment varible if defined, otherwise
@@ -232,17 +240,18 @@ fn router(settings: &Settings) -> Router {
     })
 }
 
-fn main() {
+fn main() -> Result<(), failure::Error> {
     // Read settings
     let path = if Path::new("/etc/mogger/mogger.toml").is_file() {
         Path::new("/etc/mogger/mogger.toml")
     } else {
         Path::new("mogger.toml")
     };
-    let data = std::fs::read(path).expect("no config file");
-    let settings: Settings = toml::from_slice(&data).expect("bad config");
+    let data = std::fs::read(path)?;
+    let settings = Settings::from_slice(&data)?;
     let address = settings.host_address.clone().into_owned();
 
     println!("Running at {}", address);
-    gotham::start(address, router(&settings))
+    gotham::start(address, router(&settings));
+    Ok(())
 }

@@ -1,11 +1,12 @@
 [package]
 name = "mogger"
-description = "Amanda's blog"
-homepage = "https://amandag.net"
+description = "A minimalistic blogging engine"
+homepage = "https://github.com/agraven/mogger"
 license = "AGPL-3.0-or-later"
 version = "0.1.0"
 authors = ["Amanda P. Graven <amanda@amandag.net>"]
 edition = "2018"
+readme = "README.md"
 
 [profile.release]
 lto = true
@@ -35,3 +36,20 @@ serde_urlencoded = "0.6"
 sha2 = "0.8"
 time = "0.1"
 toml = "0.5"
+
+[package.metadata.deb]
+name = "mogger"
+extended-description = "A blogging engine written in rust built for running the site amandag.net."
+depends = "$auto, adduser, postgresql"
+section = "web"
+priority = "optional"
+maintainer-scripts = "debian"
+conf-files = ["/etc/mogger/mogger.toml"]
+assets = [
+	["target/release/mogger", "usr/bin/", "755"],
+	["static/*", "usr/share/mogger/", "644"],
+	["debian/mogger.service", "lib/systemd/system/", "644"],
+	["mogger.toml", "etc/mogger/mogger.toml", "644"],
+	["README.md", "usr/share/doc/mogger/README", "644"],
+	["debian/copyright", "usr/share/doc/mogger/copyright", "644"]
+]

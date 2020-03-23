@@ -42,6 +42,6 @@ form.comment textarea {
   margin: auto;
   margin-top: 10px;
 }*/
-form.comment.reply {
+form.comment.reply, form.comment.edit {
   display: none;
 }

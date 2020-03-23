@@ -1,0 +1,11 @@
+[Unit]
+Description=Mogger blogging engine.
+After=network.target postgresql.service
+
+[Service]
+User=mogger
+Group=mogger
+ExecStart=/usr/bin/mogger
+
+[Install]
+WantedBy=multi-user.target

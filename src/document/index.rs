@@ -110,7 +110,7 @@ pub fn article(state: &State) -> DocumentResult {
     let session = Session::try_borrow_from(state);
 
     let article = article::view(connection, &id)?;
-    let id = ArticlePath::borrow_from(state).find_id(connection)?;
+    let id = article.id;
     let comments = comment::list(connection, id)?;
     let comments_template = comments
         .iter()

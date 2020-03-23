@@ -13,70 +13,100 @@
 	<!-- TODO: add categories -->
 
 	<script>
-		function auto_resize(element) {
-			element.style.height = "auto";
-			element.style.height = (element.scrollHeight + 10) + "px";
+
+function auto_resize(element) {
+	element.style.height = "auto";
+	element.style.height = (element.scrollHeight + 10) + "px";
+}
+
+// Sends the form data to the JSON API point
+function send(form) {
+	let data = new FormData(form);
+	let request = new XMLHttpRequest();
+
+	// Error handling
+	request.onerror = function() {
+		form.querySelector(".error").innerHTML = "An error happened: " + request.statusText;
+	}
+
+	// Success handling
+	request.onload = function() {
+		if (request.status == 200) {
+			form.querySelector(".error").innerHTML = "Success";
+		} else {
+			form.querySelector(".error").innerHTML = "An error happened: "+request.statusText+": "+request.responseText;
 		}
+	}
 
-		// Sends the form data to the JSON API point
-		function send(form) {
-			let data = new FormData(form);
-			let request = new XMLHttpRequest();
-
-			// Error handling
-			request.onerror = function() {
-				form.querySelector(".error").innerHTML = "An error happened: " + request.statusText;
+	// Prepare the request
+	request.open("POST", "/api/comments/submit");
+	// Convert form data to object
+	let object = {};
+	data.forEach(function(value, key) {
+		if (form.querySelector('[name="'+key+'"]').getAttribute("data-type") == "int") {
+			value = parseInt(value);
+		}
+		if (form.querySelector('[name="'+key+'"]').getAttribute("data-type") == "bool") {
+			if (value == "false") {
+				value = false;
 			}
-
-			// Success handling
-			request.onload = function() {
-				if (request.status == 200) {
-					form.querySelector(".error").innerHTML = "Success";
-				} else {
-					form.querySelector(".error").innerHTML = "An error happened: "+request.statusText+": "+request.responseText;
-				}
-			}
-
-			// Prepare the request
-			request.open("POST", "/api/comments/submit");
-			// Convert form data to object
-			let object = {};
-			data.forEach(function(value, key) {
-				if (form.querySelector('[name="'+key+'"]').getAttribute("data-type") == "int") {
-					value = parseInt(value);
-				}
-				if (form.querySelector('[name="'+key+'"]').getAttribute("data-type") == "bool") {
-					if (value == "false") {
-						value = false;
-					}
-					if (value == "true") {
-						value = true;
-					}
-				}
-				object[key] = value;
-			})
-			// Send data
-			request.send(JSON.stringify(object));
-		}
-
-		function reply(elem) {
-			let form = elem.closest("div.comment").querySelector("form.comment");
-			form.style.display = "block";
-		}
-
-		function remove(id) {
-			let request = new XMLHttpRequest();
-			request.open("GET", "/api/comments/delete/" + id);
-			request.send();
-		}
-
-		function purge(id) {
-			if (confirm("This will permanently delete the selected comment and cannot be undone. Continue?")) {
-				let request = new XMLHttpRequest();
-				request.open("GET", "/api/comments/purge/" + id);
-				request.send();
+			if (value == "true") {
+				value = true;
 			}
 		}
+		object[key] = value;
+	})
+	// Send data
+	request.send(JSON.stringify(object));
+}
+
+function reply(comment) {
+	let form = comment.querySelector("form.comment");
+	form.style.display = "block";
+}
+
+function edit(comment) {
+	let request = new XMLHttpRequest();
+	requst.addEventListener('load', function() {
+		let body = comment.querySelector("div.body");
+		let form = comment.querySelector("form.comment.edit")
+		body.style.display = "none";
+		form.style.display = "block";
+		form.querySelector("textarea").value = this.response.content;
+	}, false);
+	request.open("GET", "/api/comments/view/" + comment.getAttribute("data-id"));
+}
+
+function remove(comment) {
+	let request = new XMLHttpRequest();
+	request.open("GET", "/api/comments/delete/" + comment.getAttribute("data-id"));
+	request.send();
+}
+
+function purge(comment) {
+	if (confirm("This will permanently delete the selected comment and cannot be undone. Continue?")) {
+		let request = new XMLHttpRequest();
+		request.open("GET", "/api/comments/purge/" + comment.getAttribute("data-id"));
+		request.send();
+	}
+}
+
+for (let comment of document.querySelectorAll("div.comment")) {
+	comment.querySelector('button[data-action="reply"]').addEventListener('click', function() {
+		reply(comment);
+	}, false);
+	comment.querySelector('button[data-action="edit"]').addEventListener('click', function() {
+		edit(comment);
+	}, false);
+	{# TODO: confirmation dialog #}
+	comment.querySelector('button[data-action="remove"]').addEventListener('click', function() {
+		remove(comment);
+	}, false);
+	comment.querySelector('button[data-action="purge"]').addEventListener('click' function() {
+		purge(comment);
+	}, false);
+}
+
 	</script>
 {% endblock %}
 
@@ -89,9 +119,12 @@
 			</time>
 			{% match session %}
 			{% when Some with (session) %}
-				{# TODO: extend this #}
 				{% if session.allowed(Permission::EditForeignArticle, connection).unwrap_or(false) %}
 					<div class="edit"><a href="/edit/{{ article.id }}">Edit this article</a></div>
+				{% else if session.allowed(Permission::EditArticle, connection).unwrap_or(false) %}
+					{% if session.user == article.author(connection).unwrap_or_default() %}
+						<div class="edit"><a href="/edit/{{ article.id }}">Edit this article</a></div>
+					{% endif%}
 				{% endif %}
 			{% when None %}
 			{% endmatch %}

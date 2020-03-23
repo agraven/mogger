@@ -1,23 +1,43 @@
-<div class="comment">
+<div class="comment" data-id="{{ comment.id }}">
 	<header>
 		<span class="name">{{ comment.author(connection).unwrap_or_default()|e }}</span>
 		<time title="{{ comment.date.format("%c") }}">{{ comment.date.format("%d %b %y %H:%M") }}</time>
 	</header>
-	{% if comment.visible -%}
-		{{ comment.content|escape }}
-	{%- else -%}
-		[deleted]
-	{%- endif %}
+	<div class="body">
+		{% if comment.visible -%}
+			{{ comment.content|escape }}
+		{%- else -%}
+			[deleted]
+		{%- endif %}
+	</div>
+	<form class="comment edit">
+		<input type="hidden" name="visible" data-type="bool" value="true">
+		<textarea name="content"></textarea>
+		<button type="button" data-action="save">Save</button>
+		<button type="button" data-action="cancel">Cancel</button>
+	</form>
 	<ul class="links">
-		<li><button class="link-like" onclick="reply(this)">reply</a></li>
-		{# TODO: proper permissions for conditional display #}
-		{% if session.is_some() && comment.author.is_some() && comment.author.as_ref().unwrap().as_str() == session.unwrap().user.as_str() -%}
-		<li><button class="link-like" onclick="remove({{ comment.id }})">remove</button></li>
-		<li><button class="link-like" onclick="purge({{ comment.id }})">purge</button></li>
-		{% endif -%}
+		<li><button class="link-like" data-action="reply">reply</a></li>
+		{% match session %}
+		{% when Some with (session) %}
+			{% if session.allowed(Permission::EditComment, connection).unwrap_or(false) %}
+				{% if session.user == comment.author(connection).unwrap_or_default() %}
+					<li><button class="link-like" data-action="edit">edit</button></li>
+					<li><button class="link-like" data-action="remove">remove</button></li>
+				{% endif %}
+			{% endif %}
+			{% if session.allowed(Permission::EditForeignComment).unwrap_or(false) %}
+				<li><button class="link-like" data-action="edit">edit</button></li>
+				<li><button class="link-like" data-action="remove">remove</button></li>
+			{% endif %}
+			{% if session.allowed(Permission::All, connection).unwrap_or(false) %}
+				<li><button class="link-like" data-action="purge">purge</button></li>
+			{% endif %}
+		{% when None %}
+		{% endmatch %}
 	</ul>
 
-	<form class="comment reply" onsubmit="send(this); return false;">
+	<form class="comment reply">
 		<input type="hidden" name="article" data-type="int" value="{{ article_id }}">
 		<input type="hidden" name="visible" data-type="bool" value="true">
 		<input type="hidden" name="parent" data-type="int" value="{{ comment.id }}">
@@ -29,7 +49,7 @@
 			<label>Name: <input type="text" name="name" required></label>
 		{% endmatch %}
 		<textarea name="content" oninput="auto_resize(this)"></textarea>
-		<input type="submit" value="Submit">
+		<button type="button" data-action="submit">Submit</button>
 		<input type="button" value="Cancel" onclick="this.parentNode.style.display = 'none'">
 	</form>
 

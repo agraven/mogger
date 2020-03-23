@@ -1,0 +1,4 @@
+#!/bin/bash
+set -e
+
+adduser --system --group --home /var/lib/mogger --no-create-home mogger

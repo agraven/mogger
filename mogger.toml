@@ -1,2 +1,2 @@
-database_url = "postgres://postgres@localhost/amandag"
+database_url = "postgres://mogger@localhost/mogger"
 host_address = "localhost:6096"
