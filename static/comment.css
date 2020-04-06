@@ -37,6 +37,11 @@ form.comment textarea {
   font-size: 14px;
   color: black;
 }
+form.comment.edit {
+  background: none !important;
+  margin: 0;
+  padding: 0;
+}
 /*form.comment input[type="submit"] {
   display: block;
   margin: auto;

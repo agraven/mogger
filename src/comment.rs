@@ -1,4 +1,5 @@
 use chrono::NaiveDateTime;
+use comrak::{markdown_to_html, ComrakOptions};
 use diesel::{pg::PgConnection as Connection, prelude::*, result::Error as DieselError, Queryable};
 
 use crate::{schema::comments, user};
@@ -51,6 +52,10 @@ pub struct Node {
 }
 
 impl Comment {
+    pub fn formatted(&self) -> String {
+        markdown_to_html(&self.content, &ComrakOptions::default())
+    }
+
     pub fn author(&self, connection: &Connection) -> Result<String, failure::Error> {
         if let Some(name) = self.name.as_ref() {
             return Ok(name.to_owned());

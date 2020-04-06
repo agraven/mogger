@@ -9,7 +9,8 @@
 //!         * `/edit/<url|id>` - Edit the article with the specified `url` or `id`
 //!     * `/comments` - Comment handling
 //!         * `/list/<url|id>` - Gets the comments for the specified article
-//!         * `/view/<id>` - Gets the comment with `id`
+//!         * `/view/<id>` - Gets comment subtree with `id`
+//!         * `/single/<id>` - Gets the single comment with `id`
 //!         * `/submit` - Submits a comment
 //!         * `/edit/<id>` - Edits the comment with `id`
 //!         * `/delete/<id>` - Deletes the selected comment (i.e. marks it as hidden)
@@ -204,6 +205,16 @@ fn router(settings: &Settings) -> Router {
                     .with_path_extractor::<comments::CommentPath>()
                     .with_query_string_extractor::<comments::Context>()
                     .to(handler!(comments::view));
+
+                route
+                    .get("/single/:id")
+                    .with_path_extractor::<comments::CommentPath>()
+                    .to(handler!(comments::single));
+
+                route
+                    .get("/render/:id")
+                    .with_path_extractor::<comments::CommentPath>()
+                    .to(handler!(comments::render));
 
                 route.post("/submit").to(body_handler!(comments::submit));
 

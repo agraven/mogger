@@ -12,6 +12,7 @@
 	</div>
 	<form class="comment edit">
 		<input type="hidden" name="visible" data-type="bool" value="true">
+		<div class="error"></div>
 		<textarea name="content"></textarea>
 		<button type="button" data-action="save">Save</button>
 		<button type="button" data-action="cancel">Cancel</button>
@@ -19,22 +20,22 @@
 	<ul class="links">
 		<li><button class="link-like" data-action="reply">reply</a></li>
 		{% match session %}
-		{% when Some with (session) %}
-			{% if session.allowed(Permission::EditComment, connection).unwrap_or(false) %}
-				{% if session.user == comment.author(connection).unwrap_or_default() %}
+		{% when Some with (session) -%}
+			{% if session.allowed(Permission::EditComment, connection).unwrap_or(false) -%}
+				{% if session.user == comment.author(connection).unwrap_or_default() -%}
 					<li><button class="link-like" data-action="edit">edit</button></li>
 					<li><button class="link-like" data-action="remove">remove</button></li>
-				{% endif %}
-			{% endif %}
-			{% if session.allowed(Permission::EditForeignComment).unwrap_or(false) %}
+				{% endif -%}
+			{% endif -%}
+			{% if session.allowed(Permission::EditForeignComment, connection).unwrap_or(false) %}
 				<li><button class="link-like" data-action="edit">edit</button></li>
 				<li><button class="link-like" data-action="remove">remove</button></li>
-			{% endif %}
+			{% endif -%}
 			{% if session.allowed(Permission::All, connection).unwrap_or(false) %}
 				<li><button class="link-like" data-action="purge">purge</button></li>
-			{% endif %}
-		{% when None %}
-		{% endmatch %}
+			{% endif -%}
+		{% when None -%}
+		{% endmatch -%}
 	</ul>
 
 	<form class="comment reply">
@@ -47,10 +48,10 @@
 			<input type="hidden" name="author" value="{{ session.user }}">
 		{%- when None -%}
 			<label>Name: <input type="text" name="name" required></label>
-		{% endmatch %}
+		{%- endmatch %}
 		<textarea name="content" oninput="auto_resize(this)"></textarea>
 		<button type="button" data-action="submit">Submit</button>
-		<input type="button" value="Cancel" onclick="this.parentNode.style.display = 'none'">
+		<button type="button" data-action="cancel">Cancel</button>
 	</form>
 
 	{% for child in children %}

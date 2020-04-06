@@ -48,6 +48,36 @@ pub fn view(state: &State) -> Result<Response<Body>, failure::Error> {
     Ok(create_response(&state, StatusCode::OK, JSON, content))
 }
 
+pub fn single(state: &State) -> Result<Response<Body>, failure::Error> {
+    let connection = &DbConnection::borrow_from(state).lock()?;
+    let id = CommentPath::borrow_from(&state).id;
+
+    let comment = comment::view_single(connection, id)?;
+    let content = serde_json::to_string(&comment)?;
+    Ok(create_response(&state, StatusCode::OK, JSON, content))
+}
+
+pub fn render(state: &State) -> Result<Response<Body>, failure::Error> {
+    let connection = &DbConnection::borrow_from(state).lock()?;
+    let id = CommentPath::borrow_from(&state).id;
+
+    if let Some(comment) = comment::view_single(connection, id)? {
+        Ok(create_response(
+            &state,
+            StatusCode::OK,
+            mime::TEXT_HTML,
+            comment.formatted(),
+        ))
+    } else {
+        Ok(create_response(
+            &state,
+            StatusCode::NOT_FOUND,
+            mime::TEXT_PLAIN,
+            "Not found",
+        ))
+    }
+}
+
 pub fn submit(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Error> {
     let connection = &DbConnection::borrow_from(state).lock()?;
 

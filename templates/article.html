@@ -4,19 +4,38 @@
 	<meta property="og:title" content="{{ article.title }}"/>
 	<meta property="og:type" content="article"/>
 	<meta property="og:url" content="https://amandag.net/article/{{ article.id }}"/>
-	<!-- TODO: Add image tag -->
+	{# TODO: Add image tag #}
 	<meta property="og:description" content="{{ article.description() }}…"/>
 	<meta property="og:site_name" content="Amanda's blog"/>
 
 	<meta property="article:author" content="{{ author_name }}">
 	<meta property="article:published_time" content="{{ article.date.format("%Y-%m-%dT%H:%M:%SZ") }}">
-	<!-- TODO: add categories -->
+	{# TODO: add categories #}
 
 	<script>
 
 function auto_resize(element) {
 	element.style.height = "auto";
 	element.style.height = (element.scrollHeight + 10) + "px";
+}
+
+function formToObject(data, form) {
+	let object = {};
+	data.forEach(function(value, key) {
+		if (form.querySelector('[name="'+key+'"]').getAttribute("data-type") == "int") {
+			value = parseInt(value);
+		}
+		if (form.querySelector('[name="'+key+'"]').getAttribute("data-type") == "bool") {
+			if (value == "false") {
+				value = false;
+			}
+			if (value == "true") {
+				value = true;
+			}
+		}
+		object[key] = value;
+	})
+	return object;
 }
 
 // Sends the form data to the JSON API point
@@ -41,40 +60,62 @@ function send(form) {
 	// Prepare the request
 	request.open("POST", "/api/comments/submit");
 	// Convert form data to object
-	let object = {};
-	data.forEach(function(value, key) {
-		if (form.querySelector('[name="'+key+'"]').getAttribute("data-type") == "int") {
-			value = parseInt(value);
-		}
-		if (form.querySelector('[name="'+key+'"]').getAttribute("data-type") == "bool") {
-			if (value == "false") {
-				value = false;
-			}
-			if (value == "true") {
-				value = true;
-			}
-		}
-		object[key] = value;
-	})
+	let object = formToObject(data, form);
 	// Send data
 	request.send(JSON.stringify(object));
 }
 
 function reply(comment) {
-	let form = comment.querySelector("form.comment");
+	let form = comment.querySelector("form.comment.reply");
 	form.style.display = "block";
 }
 
 function edit(comment) {
 	let request = new XMLHttpRequest();
-	requst.addEventListener('load', function() {
+	request.addEventListener('loadend', function() {
 		let body = comment.querySelector("div.body");
-		let form = comment.querySelector("form.comment.edit")
+		let form = comment.querySelector("form.comment.edit");
+		let response = JSON.parse(this.response);
 		body.style.display = "none";
 		form.style.display = "block";
-		form.querySelector("textarea").value = this.response.content;
+		form.querySelector("textarea").value = response.content;
 	}, false);
-	request.open("GET", "/api/comments/view/" + comment.getAttribute("data-id"));
+	request.open("GET", "/api/comments/single/" + comment.getAttribute("data-id"));
+	request.send();
+}
+
+function sendEdit(contentElement, form, id) {
+	let data = new FormData(form);
+	let request = new XMLHttpRequest();
+	let req2 = new XMLHttpRequest();
+	let messageElement = form.querySelector(".error");
+	let object = formToObject(data, form);
+	request.addEventListener('error', function() {
+		messageElement.innerHTML = "A connection error happened: " + request.statusText;
+	}, false);
+
+	request.addEventListener('loadend', function() {
+		if (request.status != 200) {
+			messageElement.innerHTML = "An error happened: " + this.responseText;
+			return;
+		}
+		req2.send();
+	}, false);
+
+	// Update content element on succssful submission
+	req2.addEventListener('loadend', function() {
+		if (req2.status != 200) {
+			messageElement.innerHTML = "An error happened: " + this.responseText;
+			return;
+		}
+		contentElement.innerHTML = this.response;
+		form.style.display = 'none';
+		contentElement.style.display = 'block';
+	})
+	req2.open("GET", "/api/comments/render/" + id)
+	
+	request.open("POST", "/api/comments/edit/" + id);
+	request.send(JSON.stringify(object))
 }
 
 function remove(comment) {
@@ -91,20 +132,50 @@ function purge(comment) {
 	}
 }
 
-for (let comment of document.querySelectorAll("div.comment")) {
-	comment.querySelector('button[data-action="reply"]').addEventListener('click', function() {
-		reply(comment);
-	}, false);
-	comment.querySelector('button[data-action="edit"]').addEventListener('click', function() {
-		edit(comment);
-	}, false);
-	{# TODO: confirmation dialog #}
-	comment.querySelector('button[data-action="remove"]').addEventListener('click', function() {
-		remove(comment);
-	}, false);
-	comment.querySelector('button[data-action="purge"]').addEventListener('click' function() {
-		purge(comment);
-	}, false);
+// Add listeners to buttons
+function init() {
+	for (let comment of document.querySelectorAll("div.comment")) {
+		// Add listeners to comment buttons
+		comment.querySelector('button[data-action="reply"]').addEventListener('click', function() {
+			reply(comment);
+		}, false);
+		comment.querySelector('button[data-action="edit"]').addEventListener('click', function() {
+			edit(comment);
+		}, false);
+		{# TODO: confirmation dialog #}
+		comment.querySelector('button[data-action="remove"]').addEventListener('click', function() {
+			remove(comment);
+		}, false);
+		comment.querySelector('button[data-action="purge"]').addEventListener('click', function() {
+			purge(comment);
+		}, false);
+
+		// Add listeners to edit form buttons
+		let editForm = comment.querySelector("form.comment.edit");
+		editForm.querySelector('button[data-action="cancel"]').addEventListener('click', function() {
+			comment.querySelector("div.body").style.display = "block";
+			comment.querySelector("form.comment.edit").style.display = "none";
+		}, false);
+		editForm.querySelector('button[data-action="save"]').addEventListener('click', function() {
+			sendEdit(comment.querySelector("div.body"), editForm, comment.getAttribute("data-id"));
+		}, false);
+
+		// Add listeners to reply form buttons
+		let replyForm = comment.querySelector("form.comment.reply");
+		replyForm.querySelector('button[data-action="submit"]').addEventListener('click', function() {
+			send(replyForm);
+		}, false);
+		replyForm.querySelector('button[data-action="cancel"]').addEventListener('click', function() {
+			replyForm.style.display = 'none';
+		});
+	}
+}
+
+// Only run when DOM has loaded
+if (document.readyState === 'loading') {
+	document.addEventListener('DOMContentLoaded', init);
+} else {
+	init();
 }
 
 	</script>
