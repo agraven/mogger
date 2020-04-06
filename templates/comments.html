@@ -22,7 +22,8 @@
 		{% match session %}
 		{% when Some with (session) -%}
 			{% if session.allowed(Permission::EditComment, connection).unwrap_or(false) -%}
-				{% if session.user == comment.author(connection).unwrap_or_default() -%}
+				{# TODO: avoid needless clone #}
+				{% if session.user == comment.author.clone().unwrap_or_default() -%}
 					<li><button class="link-like" data-action="edit">edit</button></li>
 					<li><button class="link-like" data-action="remove">remove</button></li>
 				{% endif -%}
