@@ -48,6 +48,7 @@ conf-files = ["/etc/mogger/mogger.toml"]
 assets = [
 	["target/release/mogger", "usr/bin/", "755"],
 	["static/*", "usr/share/mogger/", "644"],
+	["static/fonts/*", "usr/share/mogger/fonts/", "644"],
 	["debian/mogger.service", "lib/systemd/system/", "644"],
 	["mogger.toml", "etc/mogger/mogger.toml", "644"],
 	["README.md", "usr/share/doc/mogger/README", "644"],
