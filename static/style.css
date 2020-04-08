@@ -3,129 +3,143 @@
 @import url('https://fonts.googleapis.com/css?family=Montserrat&display=swap');
 /* General element styling */
 article {
-  background: #FCE4DE;
-  padding: 3em 3.5em;
-  margin-bottom: 20px;
-  hyphens: auto;
-  text-align: justify;
+	background: #FCE4DE;
+	padding: 3em 3.5em;
+	margin-bottom: 20px;
+	hyphens: auto;
+	text-align: justify;
 }
 header {
-  margin-bottom: 1em;
+	margin-bottom: 1em;
 }
 a[href] {
-  color: #8d1e9e;
+	color: #8d1e9e;
 }
 a:visited {
-  color: #941c63;
+	color: #941c63;
 }
 h1 {
-  margin: 0;
-  font-family: "Roboto", sans-serif;
-  font-size: xx-large;
-  text-decoration: none !important;
+	margin: 0;
+	font-family: "Roboto", sans-serif;
+	font-size: xx-large;
+	text-decoration: none !important;
 }
 h1 > a {
-  color: black!important;
-  text-decoration: none;
+	color: black!important;
+	text-decoration: none;
 }
 h1 > a:hover {
-  text-decoration: underline;
+	text-decoration: underline;
 }
 time {
-  color: #444444;
-  font-family: "Montserrat";
+	color: #444444;
+	font-family: "Montserrat";
 }
 html {
-  color: black;
-  background: #80283f;
-  font-family: "Merriweather", serif;
-  line-height: 1.5;
-  font-size: 14px;
+	color: black;
+	background: #80283f;
+	font-family: "Merriweather", serif;
+	line-height: 1.5;
+	font-size: 14px;
 }
 main {
-  max-width: 45em;
-  margin: auto;
+	max-width: 45em;
+	margin: auto;
+}
+#unpublished {
+	color: #666;
+	font-style: italic;
 }
 
 /* nav bar */
 nav {
-  background: #e8B8ae;
-  display: flex;
-  margin-bottom: 20px;
-  justify-content: space-between;
-  flex-wrap: wrap;
+	background: #e8B8ae;
+	display: flex;
+	margin-bottom: 20px;
+	justify-content: space-between;
+	flex-wrap: wrap;
 }
 nav ul {
-  font-family: "Roboto", sans-serif;
-  font-size: larger;
-  list-style-type: none;
-  display: inline-flex;
-  padding: 0;
-  margin: 0px 10px;
+	font-family: "Roboto", sans-serif;
+	font-size: larger;
+	list-style-type: none;
+	display: inline-flex;
+	padding: 0;
+	margin: 0px 10px;
 }
 nav ul li a, nav ul li .navbar-item {
-  padding: 15px;
-  display: block;
-  text-decoration: none;
+	padding: 15px;
+	display: block;
+	text-decoration: none;
 }
 nav ul li a:hover {
-  background: #cc968b70;
+	background: #cc968b70;
 }
 /* Dropdown menu */
 .dropdown {
-  position: relative;
-  display: inline-block;
+	position: relative;
+	display: inline-block;
 }
 .dropdown > span::after {
-  content: "🞀";
-  display: inline-block;
-  width: 10px;
-  padding-left: 5px;
+	content: "🞀";
+	display: inline-block;
+	width: 10px;
+	padding-left: 5px;
 }
 .dropdown > span:hover::after {
-  content: "🞃";
+	content: "🞃";
 }
 .dropdown-content {
-  display: none;
-  position: absolute;
-  background-color: #e8B8ae;
-  min-width: 8rem;
-  right: 0;
-  z-index: 1;
+	display: none;
+	position: absolute;
+	background-color: #e8B8ae;
+	min-width: 8rem;
+	right: 0;
+	z-index: 1;
 }
 .dropdown:hover .dropdown-content {
-  display: block;
+	display: block;
+}
+footer.notice {
+	background: #e8b8ae;
+	padding: 2em;
+	font-size: smaller;
+	margin-top: 20px;
 }
 
 /* Link list */
 ul.links {
-  list-style: none;
-  display: block;
-  margin: 10px 0;
-  padding: 0;
+	list-style: none;
+	display: block;
+	margin: 10px 0;
+	padding: 0;
 }
 ul.links li {
-  display: inline-block;
-  padding: 0 5px;
-  font-family: "Roboto";
-  font-weight: bold
+	display: inline-block;
+	padding: 0 5px;
+	font-family: "Roboto";
+	font-weight: bold
 }
 ul.links a {
-  color: #666;
-  text-decoration: none;
+	color: #666;
+	text-decoration: none;
 }
 ul.links a:hover {
-  text-decoration: underline;
+	text-decoration: underline;
 }
 
 /* Link-like buttons */
 button.link-like {
-  background: none;
-  border: none;
-  color: #666;
-  font-weight: bold;
-  cursor: pointer;
+	background: none;
+	border: none;
+	color: #666;
+	font-weight: bold;
+	cursor: pointer;
 }
 button.link-like:hover {
-  text-decoration: underline
+	text-decoration: underline
+}
+
+.error {
+	color: #F00;
 }

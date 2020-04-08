@@ -23,9 +23,9 @@
 				<li class="dropdown">
 					<span class="navbar-item">Welcome, {{ session.user }}</span>
 					<div class="dropdown-content">
-						{% if session.allowed(Permission::CreateArticle, connection).unwrap_or(false) %}
+						{% if session.allowed(Permission::CreateArticle, connection).unwrap_or(false) -%}
 						<a href="/edit">Create article</a>
-						{% endif %}
+						{%- endif %}
 						<a href="/logout">Log out</a>
 					</div>
 				</li>
@@ -36,6 +36,10 @@
 			</ul>
 		</nav>
 		{% block content %}{% endblock %}
+
+		<footer class="notice">
+			Copyright © 2020. The <a href="https://github.com/agraven/mogger">source code</a> for this site is released under the <a rel="license" href="https://www.gnu.org/licenses/agpl-3.0.html">GNU Affero General Public License</a>. All other files are released under the <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a> unless otherwise is stated.
+		</footer>
 	</main>
 </body>
 </html>

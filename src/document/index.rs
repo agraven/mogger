@@ -2,7 +2,7 @@ use askama::Template;
 use cookie::Cookie;
 use diesel::PgConnection as Connection;
 use gotham::{
-    helpers::http::response::create_temporary_redirect as temp_redirect,
+    helpers::http::response::{create_empty_response, create_temporary_redirect as temp_redirect},
     state::{FromState, State},
 };
 use hyper::{header, StatusCode};
@@ -62,11 +62,11 @@ pub struct ArticleTemplate<'a> {
 #[derive(Template)]
 #[template(path = "comments.html", escape = "none")]
 pub struct CommentTemplate<'a> {
-    comment: &'a comment::Comment,
-    children: Vec<CommentTemplate<'a>>,
-    connection: &'a Connection,
-    session: Option<&'a Session>,
-    article_id: i32,
+    pub comment: &'a comment::Comment,
+    pub children: Vec<CommentTemplate<'a>>,
+    pub connection: &'a Connection,
+    pub session: Option<&'a Session>,
+    pub article_id: i32,
 }
 
 #[derive(Template, Clone)]
@@ -110,8 +110,12 @@ pub fn article(state: &State) -> DocumentResult {
     let session = Session::try_borrow_from(state);
 
     let article = article::view(connection, &id)?;
-    let id = article.id;
-    let comments = comment::list(connection, id)?;
+    // Return a 404 if the user isn't allowed to view the article
+    if !article.viewable(session, connection)? {
+        return Ok(create_empty_response(state, StatusCode::NOT_FOUND));
+    }
+
+    let comments = comment::list(connection, article.id)?;
     let comments_template = comments
         .iter()
         .map(|child| CommentTemplate::from_node(child, connection, session, article.id))

@@ -10,6 +10,7 @@ use mime::APPLICATION_JSON as JSON;
 use crate::{
     comment,
     comment::{CommentChanges, NewComment},
+    document::TemplateExt,
     handler::articles::ArticlePath,
     user::{
         Permission::{DeleteComment, DeleteForeignComment, EditComment, EditForeignComment},
@@ -57,7 +58,7 @@ pub fn single(state: &State) -> Result<Response<Body>, failure::Error> {
     Ok(create_response(&state, StatusCode::OK, JSON, content))
 }
 
-pub fn render(state: &State) -> Result<Response<Body>, failure::Error> {
+pub fn render_content(state: &State) -> Result<Response<Body>, failure::Error> {
     let connection = &DbConnection::borrow_from(state).lock()?;
     let id = CommentPath::borrow_from(&state).id;
 
@@ -69,12 +70,25 @@ pub fn render(state: &State) -> Result<Response<Body>, failure::Error> {
             comment.formatted(),
         ))
     } else {
-        Ok(create_response(
-            &state,
-            StatusCode::NOT_FOUND,
-            mime::TEXT_PLAIN,
-            "Not found",
-        ))
+        Ok(create_empty_response(&state, StatusCode::NOT_FOUND))
+    }
+}
+
+pub fn render(state: &State) -> Result<Response<Body>, failure::Error> {
+    let connection = &DbConnection::borrow_from(state).lock()?;
+    let id = CommentPath::borrow_from(&state).id;
+
+    if let Some(comment) = comment::view_single(connection, id)? {
+        let template = crate::document::index::CommentTemplate {
+            comment: &comment,
+            children: Vec::new(),
+            connection: connection,
+            session: Session::try_borrow_from(state),
+            article_id: comment.article,
+        };
+        Ok(template.to_response(state))
+    } else {
+        Ok(create_empty_response(&state, StatusCode::NOT_FOUND))
     }
 }
 
@@ -83,8 +97,9 @@ pub fn submit(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::E
 
     let new: NewComment = serde_json::from_slice(&post)?;
 
-    comment::submit(connection, new)?;
-    Ok(create_empty_response(&state, StatusCode::OK))
+    let submitted = comment::submit(connection, new)?;
+    let content = serde_json::to_string(&submitted)?;
+    Ok(create_response(&state, StatusCode::OK, JSON, content))
 }
 
 pub fn edit(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Error> {
@@ -122,13 +137,6 @@ pub fn delete(state: &State) -> Result<Response<Body>, failure::Error> {
         }
         _ => return Err(failure::err_msg("Permission denied")),
     };
-
-    // FIXME
-    // Check for same user
-    /*let comment = comment::view_single(connection, id)?;
-    if comment.and_then(|c| c.author) == session.map(|s| s.user.clone()) {
-        return Err(err_msg("Unauthorized"));
-    }*/
 
     comment::delete(conn, id)?;
     Ok(create_empty_response(&state, StatusCode::OK))

@@ -50,7 +50,7 @@
 			<textarea name="content" oninput="auto_resize(this)" required>{{ article.content }}</textarea>
 			<div class="submit">
 				<input type="submit" value="Submit">
-				<input type="checkbox" name="visible" id="visible" value="true">
+				<input type="checkbox" name="visible" id="visible" value="true"{% if article.visible %} checked{% endif %}>
 				<label for="visible">Visible</label>
 			</div>
 		{% endmatch %}

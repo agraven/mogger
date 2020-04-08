@@ -17,6 +17,7 @@
 		</article>
 	{% endif %}
 	{% for article in articles %}
+		{% if article.viewable(session, connection).unwrap_or(false) %}
 		<article>
 			<header>
 				<h1><a href="/article/{{ article.url }}">{{ article.title }}</a></h1>
@@ -28,5 +29,6 @@
 
 			<p><a href="/article/{{ article.url }}">Read more ({{ article.comment_count(connection).unwrap_or_default() }} comments)</a></p>
 		</article>
+		{% endif %}
 	{% endfor %}
 {% endblock %}

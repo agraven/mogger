@@ -1,4 +1,7 @@
 {% extends "root.html" %}
+
+{% block title %}Amanda's blog - {{ article.title|e }}{% endblock %}
+
 {% block head %}
 	<link href="/file/comment.css" rel="stylesheet" type="text/css">
 	<meta property="og:title" content="{{ article.title }}"/>
@@ -12,173 +15,7 @@
 	<meta property="article:published_time" content="{{ article.date.format("%Y-%m-%dT%H:%M:%SZ") }}">
 	{# TODO: add categories #}
 
-	<script>
-
-function auto_resize(element) {
-	element.style.height = "auto";
-	element.style.height = (element.scrollHeight + 10) + "px";
-}
-
-function formToObject(data, form) {
-	let object = {};
-	data.forEach(function(value, key) {
-		if (form.querySelector('[name="'+key+'"]').getAttribute("data-type") == "int") {
-			value = parseInt(value);
-		}
-		if (form.querySelector('[name="'+key+'"]').getAttribute("data-type") == "bool") {
-			if (value == "false") {
-				value = false;
-			}
-			if (value == "true") {
-				value = true;
-			}
-		}
-		object[key] = value;
-	})
-	return object;
-}
-
-// Sends the form data to the JSON API point
-function send(form) {
-	let data = new FormData(form);
-	let request = new XMLHttpRequest();
-
-	// Error handling
-	request.onerror = function() {
-		form.querySelector(".error").innerHTML = "An error happened: " + request.statusText;
-	}
-
-	// Success handling
-	request.onload = function() {
-		if (request.status == 200) {
-			form.querySelector(".error").innerHTML = "Success";
-		} else {
-			form.querySelector(".error").innerHTML = "An error happened: "+request.statusText+": "+request.responseText;
-		}
-	}
-
-	// Prepare the request
-	request.open("POST", "/api/comments/submit");
-	// Convert form data to object
-	let object = formToObject(data, form);
-	// Send data
-	request.send(JSON.stringify(object));
-}
-
-function reply(comment) {
-	let form = comment.querySelector("form.comment.reply");
-	form.style.display = "block";
-}
-
-function edit(comment) {
-	let request = new XMLHttpRequest();
-	request.addEventListener('loadend', function() {
-		let body = comment.querySelector("div.body");
-		let form = comment.querySelector("form.comment.edit");
-		let response = JSON.parse(this.response);
-		body.style.display = "none";
-		form.style.display = "block";
-		form.querySelector("textarea").value = response.content;
-	}, false);
-	request.open("GET", "/api/comments/single/" + comment.getAttribute("data-id"));
-	request.send();
-}
-
-function sendEdit(contentElement, form, id) {
-	let data = new FormData(form);
-	let request = new XMLHttpRequest();
-	let req2 = new XMLHttpRequest();
-	let messageElement = form.querySelector(".error");
-	let object = formToObject(data, form);
-	request.addEventListener('error', function() {
-		messageElement.innerHTML = "A connection error happened: " + request.statusText;
-	}, false);
-
-	request.addEventListener('loadend', function() {
-		if (request.status != 200) {
-			messageElement.innerHTML = "An error happened: " + this.responseText;
-			return;
-		}
-		req2.send();
-	}, false);
-
-	// Update content element on succssful submission
-	req2.addEventListener('loadend', function() {
-		if (req2.status != 200) {
-			messageElement.innerHTML = "An error happened: " + this.responseText;
-			return;
-		}
-		contentElement.innerHTML = this.response;
-		form.style.display = 'none';
-		contentElement.style.display = 'block';
-	})
-	req2.open("GET", "/api/comments/render/" + id)
-	
-	request.open("POST", "/api/comments/edit/" + id);
-	request.send(JSON.stringify(object))
-}
-
-function remove(comment) {
-	let request = new XMLHttpRequest();
-	request.open("GET", "/api/comments/delete/" + comment.getAttribute("data-id"));
-	request.send();
-}
-
-function purge(comment) {
-	if (confirm("This will permanently delete the selected comment and cannot be undone. Continue?")) {
-		let request = new XMLHttpRequest();
-		request.open("GET", "/api/comments/purge/" + comment.getAttribute("data-id"));
-		request.send();
-	}
-}
-
-// Add listeners to buttons
-function init() {
-	for (let comment of document.querySelectorAll("div.comment")) {
-		// Add listeners to comment buttons
-		comment.querySelector('button[data-action="reply"]').addEventListener('click', function() {
-			reply(comment);
-		}, false);
-		comment.querySelector('button[data-action="edit"]').addEventListener('click', function() {
-			edit(comment);
-		}, false);
-		{# TODO: confirmation dialog #}
-		comment.querySelector('button[data-action="remove"]').addEventListener('click', function() {
-			remove(comment);
-		}, false);
-		comment.querySelector('button[data-action="purge"]').addEventListener('click', function() {
-			purge(comment);
-		}, false);
-
-		// Add listeners to edit form buttons
-		let editForm = comment.querySelector("form.comment.edit");
-		editForm.querySelector('button[data-action="cancel"]').addEventListener('click', function() {
-			comment.querySelector("div.body").style.display = "block";
-			comment.querySelector("form.comment.edit").style.display = "none";
-		}, false);
-		editForm.querySelector('button[data-action="save"]').addEventListener('click', function() {
-			sendEdit(comment.querySelector("div.body"), editForm, comment.getAttribute("data-id"));
-		}, false);
-
-		// Add listeners to reply form buttons
-		let replyForm = comment.querySelector("form.comment.reply");
-		replyForm.querySelector('button[data-action="submit"]').addEventListener('click', function() {
-			send(replyForm);
-		}, false);
-		replyForm.querySelector('button[data-action="cancel"]').addEventListener('click', function() {
-			replyForm.style.display = 'none';
-		});
-	}
-}
-
-// Only run when DOM has loaded
-if (document.readyState === 'loading') {
-	document.addEventListener('DOMContentLoaded', init);
-} else {
-	init();
-}
-
-	</script>
+	<script src="/file/article.js" async></script>
 {% endblock %}
 
 {% block content %}
@@ -188,22 +25,17 @@ if (document.readyState === 'loading') {
 			<time title="{{ article.date.format("%c") }}" datetime="{{ article.date.format("%F %T") }}">
 				{{ article.date.format("%d %b %Y - %H:%M") }}
 			</time>
-			{% match session %}
-			{% when Some with (session) %}
-				{% if session.allowed(Permission::EditForeignArticle, connection).unwrap_or(false) %}
-					<div class="edit"><a href="/edit/{{ article.id }}">Edit this article</a></div>
-				{% else if session.allowed(Permission::EditArticle, connection).unwrap_or(false) %}
-					{% if session.user == article.author(connection).unwrap_or_default() %}
-						<div class="edit"><a href="/edit/{{ article.id }}">Edit this article</a></div>
-					{% endif%}
-				{% endif %}
-			{% when None %}
-			{% endmatch %}
 		</header>
+		{% if article.editable(session, connection).unwrap_or(false) -%}
+			<p class="edit"><a href="/edit/{{ article.id }}">Edit this article</a></p>
+		{% endif %}
+		{% if !article.visible -%}
+			<p id="unpublished">This article has not been published.</p>
+		{% endif %}
 		{{ article.formatted() }}
 	</article>
 
-	<form class="comment" onsubmit="send(this); return false;">
+	<form class="comment" id="new-comment">
 		<h1>Write a comment</h1>
 		<input type="hidden" name="article" data-type="int" value="{{ article.id }}">
 		<input type="hidden" name="visible" data-type="bool" value="true">
@@ -211,11 +43,11 @@ if (document.readyState === 'loading') {
 		{% match session -%}
 		{%- when Some with (session) -%}
 			<input type="hidden" name="author" value="{{ session.user }}">
-		{%- when None -%}
+		{% when None -%}
 			<label>Name: <input type="text" name="name" required></label>
-		{% endmatch %}
-		<textarea name="content" oninput="auto_resize(this)"></textarea>
-		<input type="submit" value="Submit">
+		{%- endmatch %}
+		<textarea name="content"></textarea>
+		<button type="button" data-action="submit">Submit</button>
 	</form>
 
 	{% for tree in comments %}

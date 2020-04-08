@@ -5,7 +5,7 @@
 	</header>
 	<div class="body">
 		{% if comment.visible -%}
-			{{ comment.content|escape }}
+			{{ comment.formatted() }}
 		{%- else -%}
 			[deleted]
 		{%- endif %}
@@ -19,24 +19,17 @@
 	</form>
 	<ul class="links">
 		<li><button class="link-like" data-action="reply">reply</a></li>
+		{% if comment.editable(session, connection).unwrap_or(false) %}
+			<li><button class="link-like" data-action="edit">edit</button></li>
+			<li><button class="link-like" data-action="remove">remove</button></li>
+		{% endif -%}
 		{% match session %}
 		{% when Some with (session) -%}
-			{% if session.allowed(Permission::EditComment, connection).unwrap_or(false) -%}
-				{# TODO: avoid needless clone #}
-				{% if session.user == comment.author.clone().unwrap_or_default() -%}
-					<li><button class="link-like" data-action="edit">edit</button></li>
-					<li><button class="link-like" data-action="remove">remove</button></li>
-				{% endif -%}
-			{% endif -%}
-			{% if session.allowed(Permission::EditForeignComment, connection).unwrap_or(false) %}
-				<li><button class="link-like" data-action="edit">edit</button></li>
-				<li><button class="link-like" data-action="remove">remove</button></li>
-			{% endif -%}
-			{% if session.allowed(Permission::All, connection).unwrap_or(false) %}
+			{% if session.allowed(Permission::DeleteForeignComment, connection).unwrap_or(false) -%}
 				<li><button class="link-like" data-action="purge">purge</button></li>
 			{% endif -%}
 		{% when None -%}
-		{% endmatch -%}
+		{% endmatch %}
 	</ul>
 
 	<form class="comment reply">
@@ -50,7 +43,7 @@
 		{%- when None -%}
 			<label>Name: <input type="text" name="name" required></label>
 		{%- endmatch %}
-		<textarea name="content" oninput="auto_resize(this)"></textarea>
+		<textarea name="content"></textarea>
 		<button type="button" data-action="submit">Submit</button>
 		<button type="button" data-action="cancel">Cancel</button>
 	</form>

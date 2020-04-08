@@ -37,6 +37,7 @@ pub mod handler;
 pub mod schema;
 pub mod user;
 
+use comrak::ComrakOptions;
 pub use diesel::pg::PgConnection as Connection;
 use gotham::{
     middleware::cookie::CookieParser,
@@ -110,6 +111,24 @@ impl DbConnection {
         }
     }
 }
+
+pub const COMRAK_OPTS: ComrakOptions = ComrakOptions {
+    hardbreaks: false,
+    smart: false,
+    github_pre_lang: true,
+    width: 0,
+    default_info_string: None,
+    unsafe_: false,
+    ext_strikethrough: true,
+    ext_tagfilter: false,
+    ext_table: true,
+    ext_autolink: true,
+    ext_tasklist: false,
+    ext_superscript: true,
+    ext_header_ids: None,
+    ext_footnotes: true,
+    ext_description_lists: false,
+};
 
 /// Builds the request router
 fn router(settings: &Settings) -> Router {
@@ -211,6 +230,10 @@ fn router(settings: &Settings) -> Router {
                     .with_path_extractor::<comments::CommentPath>()
                     .to(handler!(comments::single));
 
+                route
+                    .get("/render-content/:id")
+                    .with_path_extractor::<comments::CommentPath>()
+                    .to(handler!(comments::render_content));
                 route
                     .get("/render/:id")
                     .with_path_extractor::<comments::CommentPath>()

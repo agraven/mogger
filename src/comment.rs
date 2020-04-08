@@ -1,8 +1,11 @@
 use chrono::NaiveDateTime;
-use comrak::{markdown_to_html, ComrakOptions};
+use comrak::markdown_to_html;
 use diesel::{pg::PgConnection as Connection, prelude::*, result::Error as DieselError, Queryable};
 
-use crate::{schema::comments, user};
+use crate::{
+    schema::comments,
+    user::{self, Permission, Session},
+};
 
 #[derive(Clone, Debug, Serialize, Deserialize, Queryable, Identifiable)]
 pub struct Comment {
@@ -52,8 +55,38 @@ pub struct Node {
 }
 
 impl Comment {
+    pub fn viewable(
+        &self,
+        session: Option<&Session>,
+        conn: &Connection,
+    ) -> Result<bool, DieselError> {
+        if self.visible {
+            Ok(true)
+        } else {
+            self.editable(session, conn)
+        }
+    }
+
+    pub fn editable(
+        &self,
+        session: Option<&Session>,
+        conn: &Connection,
+    ) -> Result<bool, DieselError> {
+        if let Some(session) = session {
+            Ok(session.allowed(Permission::EditForeignComment, conn)?
+                || session.allowed(Permission::EditComment, conn)?
+                    && self
+                        .author
+                        .as_ref()
+                        .map(|a| a == &session.user)
+                        .unwrap_or(false))
+        } else {
+            Ok(false)
+        }
+    }
+
     pub fn formatted(&self) -> String {
-        markdown_to_html(&self.content, &ComrakOptions::default())
+        markdown_to_html(&self.content, &crate::COMRAK_OPTS)
     }
 
     pub fn author(&self, connection: &Connection) -> Result<String, failure::Error> {
@@ -151,10 +184,11 @@ pub fn view_single(connection: &Connection, id: i32) -> Result<Option<Comment>, 
     dsl::comments.find(id).first(connection).optional()
 }
 
-pub fn submit(connection: &Connection, comment: NewComment) -> Result<usize, DieselError> {
-    diesel::insert_into(comments::table)
+pub fn submit(connection: &Connection, comment: NewComment) -> Result<Comment, DieselError> {
+    let sumbitted = diesel::insert_into(comments::table)
         .values(&comment)
-        .execute(connection)
+        .get_result(connection)?;
+    Ok(sumbitted)
 }
 
 pub fn edit(
@@ -211,7 +245,7 @@ mod tests {
             id,
             parent,
             article: 1,
-            author: String::from("test_author"),
+            author: Some(String::from("test_author")),
             name: None,
             content: String::from("Test article"),
             date: Utc::now().naive_utc(),

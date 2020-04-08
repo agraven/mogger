@@ -1,5 +1,5 @@
 use chrono::naive::NaiveDateTime;
-use comrak::{markdown_to_html, ComrakOptions};
+use comrak::markdown_to_html;
 use diesel::pg::PgConnection as Connection;
 use diesel::prelude::*;
 use diesel::result::Error as DieselError;
@@ -8,7 +8,7 @@ use diesel::RunQueryDsl;
 
 use crate::schema::articles;
 
-use crate::user::User;
+use crate::user::{Permission, Session, User};
 
 const PREVIEW_LEN: usize = 500;
 const DESCRIPTION_LEN: usize = 160;
@@ -33,6 +33,36 @@ pub struct Article {
 }
 
 impl Article {
+    /// Checks if the given session is authorized to view this article. Permission is granted if
+    /// the article is marked visible or the user has editing rights.
+    pub fn viewable(
+        &self,
+        session: Option<&Session>,
+        conn: &Connection,
+    ) -> Result<bool, DieselError> {
+        if self.visible {
+            return Ok(true);
+        } else {
+            self.editable(session, conn)
+        }
+    }
+
+    /// Checks if the given session has permission to edit this article. Permission is granted if
+    /// the user has the EditForeignArticle permission, or owns this article and has the
+    /// EditArticle permission.
+    pub fn editable(
+        &self,
+        session: Option<&Session>,
+        conn: &Connection,
+    ) -> Result<bool, DieselError> {
+        if let Some(session) = session {
+            Ok(session.allowed(Permission::EditForeignArticle, conn)?
+                || session.allowed(Permission::EditArticle, conn)? && self.author == session.user)
+        } else {
+            Ok(false)
+        }
+    }
+
     /// Get the user who submitted this article
     pub fn user(&self, connection: &Connection) -> Result<User, DieselError> {
         crate::schema::users::dsl::users
@@ -42,7 +72,7 @@ impl Article {
 
     /// Return the marked up version of the article's body.
     pub fn formatted(&self) -> String {
-        markdown_to_html(&self.content, &ComrakOptions::default())
+        markdown_to_html(&self.content, &crate::COMRAK_OPTS)
     }
 
     /// Get a short slice of the article's contents.
