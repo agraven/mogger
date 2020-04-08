@@ -5,6 +5,18 @@
 	src: local('Merriweather Regular'), local('Merriweather-Regular'), url('merriweather.woff2');
 }
 @font-face {
+	font-family: 'Merriweather';
+	font-style: italic;
+	font-weight: normal;
+	src: local('Merriweather Italic'), local('Merriweather-Italic'), url('merriweather-italic.woff2');
+}
+@font-face {
+	font-family: 'Merriweather';
+	font-style: normal;
+	font-weight: bold;
+	src: local('Merriweather Bold'), local('Merriweather-Bold'), url('merriweather-bold.woff2');
+}
+@font-face {
 	font-family: 'Roboto';
 	font-style: normal;
 	font-weight: normal;

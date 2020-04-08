@@ -124,7 +124,7 @@ pub const COMRAK_OPTS: ComrakOptions = ComrakOptions {
     ext_table: true,
     ext_autolink: true,
     ext_tasklist: false,
-    ext_superscript: true,
+    ext_superscript: false,
     ext_header_ids: None,
     ext_footnotes: true,
     ext_description_lists: false,

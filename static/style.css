@@ -55,6 +55,14 @@ main {
 	color: #666;
 	font-style: italic;
 }
+table {
+	border: 1px solid;
+	border-collapse: collapse;
+}
+th, td {
+	border: 1px solid;
+	padding: 5px;
+}
 
 /* nav bar */
 nav {

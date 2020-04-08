@@ -85,22 +85,23 @@ impl Article {
     }
 
     /// Used when displaying a preview of the article's contents in a list of articles.
-    pub fn preview(&self) -> &str {
-        let len = self.content.len();
+    pub fn preview(&self) -> String {
+        let mut rendered = self.formatted();
+
+        let len = rendered.len();
         if len < PREVIEW_LEN {
-            return &self.content[..len];
+            return rendered;
         }
 
-        // Get a valid index
-        let mut end = PREVIEW_LEN;
-        while !self.content.is_char_boundary(end) {
-            end -= 1;
-        }
-        // Find whitespace closest to the end
-        let end = self.content[..end]
-            .rfind(char::is_whitespace)
-            .unwrap_or(end);
-        &self.content[..end]
+        // Get index of third <p> element
+        let end = rendered
+            .match_indices("<p>")
+            .nth(2)
+            .map(|(idx, _)| idx)
+            .unwrap_or(len);
+        rendered.truncate(end);
+        rendered.push('…');
+        rendered
     }
 
     pub fn author(&self, connection: &Connection) -> Result<String, DieselError> {
