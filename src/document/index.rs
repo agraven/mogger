@@ -1,6 +1,5 @@
 use askama::Template;
 use cookie::Cookie;
-use diesel::PgConnection as Connection;
 use gotham::{
     helpers::http::response::{create_empty_response, create_temporary_redirect as temp_redirect},
     state::{FromState, State},
@@ -17,7 +16,7 @@ use crate::{
         Permission::{CreateArticle, EditArticle, EditForeignArticle},
         Session,
     },
-    DbConnection,
+    Connection, DbConnection,
 };
 
 #[derive(Template)]
@@ -47,6 +46,22 @@ pub fn handler(state: &State) -> DocumentResult {
     };
     let reponse = template.to_response(state);
     Ok(reponse)
+}
+
+#[derive(Template)]
+#[template(path = "about.html")]
+pub struct AboutTemplate<'a> {
+    session: Option<&'a Session>,
+    connection: &'a Connection,
+}
+
+pub fn about(state: &State) -> DocumentResult {
+    let connection = &DbConnection::borrow_from(state).lock()?;
+    let template = AboutTemplate {
+        session: Session::try_borrow_from(state),
+        connection,
+    };
+    Ok(template.to_response(state))
 }
 
 #[derive(Template)]

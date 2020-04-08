@@ -167,6 +167,8 @@ fn router(settings: &Settings) -> Router {
             .post("/initial-setup")
             .to(body_handler!(document::index::init_setup_post));
 
+        route.get("/about").to(handler!(document::index::about));
+
         route
             .get("/article/:id")
             .with_path_extractor::<articles::ArticlePath>()
