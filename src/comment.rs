@@ -234,6 +234,12 @@ pub fn author(connection: &Connection, id: i32) -> Result<Option<String>, Diesel
     dsl::comments.select(dsl::author).find(id).first(connection)
 }
 
+pub fn by_user(connection: &Connection, user: &str) -> Result<Vec<Comment>, DieselError> {
+    use crate::schema::comments::dsl;
+
+    dsl::comments.filter(dsl::author.eq(user)).load(connection)
+}
+
 #[cfg(test)]
 mod tests {
     use chrono::Utc;

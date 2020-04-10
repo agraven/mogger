@@ -9,12 +9,15 @@ use hyper::{header, StatusCode};
 use super::{DocumentResult, TemplateExt};
 use crate::{
     article::{self, Article, ArticleChanges, NewArticle},
-    comment,
-    handler::articles::{ArticleIdPath, ArticlePath},
+    comment::{self, Comment},
+    handler::{
+        articles::{ArticleIdPath, ArticlePath},
+        users::UserPath,
+    },
     user::{
         self, Login, NewUser, Permission,
         Permission::{CreateArticle, EditArticle, EditForeignArticle},
-        Session,
+        Session, User,
     },
     Connection, DbConnection,
 };
@@ -75,13 +78,12 @@ pub struct ArticleTemplate<'a> {
 }
 
 #[derive(Template)]
-#[template(path = "comments.html", escape = "none")]
+#[template(path = "comments.html")]
 pub struct CommentTemplate<'a> {
     pub comment: &'a comment::Comment,
     pub children: Vec<CommentTemplate<'a>>,
     pub connection: &'a Connection,
     pub session: Option<&'a Session>,
-    pub article_id: i32,
 }
 
 #[derive(Template, Clone)]
@@ -103,19 +105,32 @@ impl<'a> CommentTemplate<'a> {
         tree: &'a comment::Node,
         connection: &'a Connection,
         session: Option<&'a Session>,
-        article_id: i32,
     ) -> Self {
         CommentTemplate {
             comment: &tree.comment,
             children: tree
                 .children
                 .iter()
-                .map(|child| CommentTemplate::from_node(child, connection, session, article_id))
+                .map(|child| CommentTemplate::from_node(child, connection, session))
                 .collect(),
             connection,
             session,
-            article_id,
         }
+    }
+
+    fn from_list(
+        list: &'a [Comment],
+        connection: &'a Connection,
+        session: Option<&'a Session>,
+    ) -> Vec<Self> {
+        list.iter()
+            .map(|comment| CommentTemplate {
+                comment: comment,
+                children: Vec::new(),
+                connection,
+                session,
+            })
+            .collect()
     }
 }
 
@@ -133,7 +148,7 @@ pub fn article(state: &State) -> DocumentResult {
     let comments = comment::list(connection, article.id)?;
     let comments_template = comments
         .iter()
-        .map(|child| CommentTemplate::from_node(child, connection, session, article.id))
+        .map(|child| CommentTemplate::from_node(child, connection, session))
         .collect();
     let author = article.user(connection)?;
     let template = ArticleTemplate {
@@ -253,6 +268,34 @@ pub fn logout(state: &State) -> DocumentResult {
         .append(header::SET_COOKIE, cookie.to_string().parse()?);
 
     Ok(response)
+}
+
+#[derive(Template)]
+#[template(path = "user.html")]
+struct UserTemplate<'a> {
+    user: &'a User,
+    comments: &'a [CommentTemplate<'a>],
+    session: Option<&'a Session>,
+    connection: &'a Connection,
+}
+
+pub fn user(state: &State) -> DocumentResult {
+    let connection = &DbConnection::borrow_from(state).lock()?;
+    let session = Session::try_borrow_from(state);
+
+    let user_id = &UserPath::borrow_from(state).user;
+    let user = user::get(connection, user_id)?;
+    let comments = comment::by_user(connection, user_id)?;
+    let comment_templates = CommentTemplate::from_list(&comments, connection, session);
+
+    let template = UserTemplate {
+        user: &user,
+        comments: &comment_templates,
+        session,
+        connection,
+    };
+
+    Ok(template.to_response(state))
 }
 
 #[derive(Template)]

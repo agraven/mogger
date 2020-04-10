@@ -157,7 +157,7 @@ fn router(settings: &Settings) -> Router {
     );
 
     build_router(chain, pipelines, |route| {
-        use crate::handler::articles;
+        use crate::handler::{articles, users};
         route.get("/").to(handler!(document::index::handler));
 
         route
@@ -173,6 +173,11 @@ fn router(settings: &Settings) -> Router {
             .get("/article/:id")
             .with_path_extractor::<articles::ArticlePath>()
             .to(handler!(document::index::article));
+
+        route
+            .get("/user/:user")
+            .with_path_extractor::<users::UserPath>()
+            .to(handler!(document::index::user));
 
         route.get("/login").to(handler!(document::index::login));
         route
@@ -260,8 +265,6 @@ fn router(settings: &Settings) -> Router {
             });
 
             route.scope("/users", |route| {
-                use crate::handler::users;
-
                 route.post("/create").to(body_handler!(users::create));
                 route.post("/login").to(body_handler!(users::login));
             });

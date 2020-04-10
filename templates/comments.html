@@ -1,11 +1,18 @@
 <div class="comment" data-id="{{ comment.id }}">
 	<header>
-		<span class="name">{{ comment.author(connection).unwrap_or_default()|e }}</span>
+		{% match comment.author -%}
+		{% when Some with (author) -%}
+			<span class="name">
+				<a href="/user/{{ author }}">{{ comment.author(connection).unwrap_or_default() }}</a>
+			</span>
+		{% when None %}
+			<span class="name">{{ comment.name.as_ref().unwrap() }}</span>
+		{% endmatch %}
 		<time title="{{ comment.date.format("%c") }}">{{ comment.date.format("%d %b %y %H:%M") }}</time>
 	</header>
 	<div class="body">
 		{% if comment.visible -%}
-			{{ comment.formatted() }}
+			{{ comment.formatted()|safe }}
 		{%- else -%}
 			[deleted]
 		{%- endif %}
@@ -33,7 +40,7 @@
 	</ul>
 
 	<form class="comment reply">
-		<input type="hidden" name="article" data-type="int" value="{{ article_id }}">
+		<input type="hidden" name="article" data-type="int" value="{{ comment.article }}">
 		<input type="hidden" name="visible" data-type="bool" value="true">
 		<input type="hidden" name="parent" data-type="int" value="{{ comment.id }}">
 		<div class="error"></div>
@@ -49,6 +56,6 @@
 	</form>
 
 	{% for child in children %}
-		{{ child.render().unwrap() }}
+		{{ child.render().unwrap()|safe }}
 	{% endfor %}
 </div>

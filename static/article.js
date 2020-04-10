@@ -186,9 +186,11 @@ function addCommentListeners(comment) {
 // Add listeners to buttons
 function init() {
 	let topComment = document.getElementById('new-comment');
-	topComment.querySelector('button[data-action="submit"]').addEventListener('click', function() {
-		send(topComment);
-	}, false);
+	if (topComment !== null) {
+		topComment.querySelector('button[data-action="submit"]').addEventListener('click', function() {
+			send(topComment);
+		}, false);
+	}
 	for (let textarea of document.querySelectorAll("textarea")) {
 		textarea.addEventListener('input', function() { auto_resize(this) }, false);
 		auto_resize(textarea);

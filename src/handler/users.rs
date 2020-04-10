@@ -2,6 +2,7 @@ use gotham::{
     helpers::http::response::{create_empty_response, create_response},
     state::{FromState, State},
 };
+use gotham_derive::{StateData, StaticResponseExtender};
 use hyper::{Body, Response, StatusCode};
 use mime::APPLICATION_JSON as JSON;
 
@@ -9,6 +10,11 @@ use crate::{
     user::{self, Login, NewUser},
     DbConnection,
 };
+
+#[derive(Deserialize, StateData, StaticResponseExtender)]
+pub struct UserPath {
+    pub user: String,
+}
 
 pub fn create(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Error> {
     let connection = &DbConnection::borrow_from(state).lock()?;

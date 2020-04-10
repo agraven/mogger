@@ -1,0 +1,19 @@
+{% extends "root.html" %}
+
+{% block head %}
+	<link rel="stylesheet" type="text/css" href="/file/comment.css">
+	<script src="/file/article.js" async></script>
+{% endblock %}
+
+{% block content %}
+	<article>
+		<header>
+			<h1>{{ user.name }}</h1>
+			<h2>{{ user.id }}</h2>
+		</header>
+	</article>
+
+	{% for comment in comments %}
+		{{ comment.render().unwrap()|safe }}
+	{% endfor %}
+{% endblock %}
