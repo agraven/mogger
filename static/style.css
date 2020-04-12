@@ -63,6 +63,14 @@ th, td {
 	border: 1px solid;
 	padding: 5px;
 }
+pre {
+	background: #e4cfc9;
+	margin: 1em;
+	padding: 12px;
+}
+.footnotes {
+	font-size: small;
+}
 
 /* nav bar */
 nav {

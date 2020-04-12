@@ -58,7 +58,9 @@ function send(form) {
 			return;
 		}
 		form.insertAdjacentHTML('afterend', this.response);
-		form.style.display = 'none';
+		if (form.id !== 'new-comment') {
+			form.style.display = 'none';
+		}
 		addCommentListeners(form.nextElementSibling);
 	}, false);
 
