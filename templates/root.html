@@ -13,6 +13,10 @@
 </head>
 <body>
 	<main>
+		<div class="logo">
+			<img src="/file/favicon.svg" width="100" height="100">
+			<span>Amanda's blog</span>
+		</div>
 		<nav>
 			<ul>
 				<li><a href="/">Home</a></li>
@@ -24,6 +28,7 @@
 				<li class="dropdown">
 					<span class="navbar-item">Welcome, {{ session.user }}</span>
 					<div class="dropdown-content">
+						<a href="/user/{{ session.user }}">Profile</a>
 						{% if session.allowed(Permission::CreateArticle, connection).unwrap_or(false) -%}
 						<a href="/edit">Create article</a>
 						{%- endif %}

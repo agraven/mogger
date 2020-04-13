@@ -27,8 +27,10 @@
 				<label for="display-name">Display name: </label>
 				<input type="text" name="name" id="display-name" required>
 			</div>
-
-			<input type="hidden" name="group" value="default">
+			<div class="secret">
+				<label for="secret">Password: </label>
+				<input type="password" name="secret" id="secret" tabindex="-1" autocomplete="off">
+			</div>
 
 			<div class="submit">
 				<input type="submit">

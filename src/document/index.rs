@@ -15,9 +15,9 @@ use crate::{
         users::UserPath,
     },
     user::{
-        self, Login, NewUser, Permission,
+        self, Login, NewUser, PasswordChange, Permission,
         Permission::{CreateArticle, EditArticle, EditForeignArticle},
-        Session, User,
+        Session, User, UserDeletion, UserProfile,
     },
     Connection, DbConnection,
 };
@@ -219,6 +219,11 @@ struct SignupResultTemplate<'a> {
 
 pub fn signup_post(state: &State, post: Vec<u8>) -> DocumentResult {
     let new_user: NewUser = serde_urlencoded::from_bytes(&post)?;
+    if !new_user.secret.is_empty() {
+        return Err(failure::err_msg(
+            "You're not supposed to fill out this field",
+        ));
+    }
     let connection = &DbConnection::borrow_from(state).lock()?;
     // TODO: check password strength and other input validation
     user::create(connection, new_user.clone())?;
@@ -296,6 +301,67 @@ pub fn user(state: &State) -> DocumentResult {
     };
 
     Ok(template.to_response(state))
+}
+
+#[derive(Template)]
+#[template(path = "user-edit.html")]
+struct UserProfileTemplate<'a> {
+    session: Option<&'a Session>,
+    connection: &'a Connection,
+    user: &'a User,
+}
+
+pub fn user_edit(state: &State) -> DocumentResult {
+    let connection = &DbConnection::borrow_from(state).lock()?;
+    let session = Session::try_borrow_from(state);
+
+    let user_id = &UserPath::borrow_from(state).user;
+    let user = user::get(connection, &user_id)?;
+
+    let template = UserProfileTemplate {
+        session,
+        connection,
+        user: &user,
+    };
+    Ok(template.to_response(state))
+}
+
+pub fn user_profile_post(state: &State, post: Vec<u8>) -> DocumentResult {
+    let profile: UserProfile = serde_urlencoded::from_bytes(&post)?;
+    let connection = &DbConnection::borrow_from(state).lock()?;
+    let user_id = &UserPath::borrow_from(state).user;
+
+    user::edit_profile(connection, user_id, &profile)?;
+
+    let mut response = temp_redirect(state, format!("/user/{}", user_id));
+    *response.status_mut() = StatusCode::SEE_OTHER;
+    Ok(response)
+}
+
+pub fn user_password_post(state: &State, post: Vec<u8>) -> DocumentResult {
+    let change: PasswordChange = serde_urlencoded::from_bytes(&post)?;
+    let connection = &DbConnection::borrow_from(state).lock()?;
+    let user_id = &UserPath::borrow_from(state).user;
+
+    if !user::change_password(connection, &user_id, &change)? {
+        return Err(failure::err_msg("Wrong password"));
+    }
+
+    let mut response = temp_redirect(state, format!("/user/{}", user_id));
+    *response.status_mut() = StatusCode::SEE_OTHER;
+    Ok(response)
+}
+
+pub fn user_delete_post(state: &State, post: Vec<u8>) -> DocumentResult {
+    let connection = &DbConnection::borrow_from(state).lock()?;
+    let deletion: UserDeletion = serde_urlencoded::from_bytes(&post)?;
+    let user_id = &UserPath::borrow_from(state).user;
+
+    user::delete(connection, &user_id, &deletion)?;
+
+    let mut response = temp_redirect(state, "/");
+    *response.status_mut() = StatusCode::SEE_OTHER;
+    Ok(response)
 }
 
 #[derive(Template)]
@@ -378,6 +444,7 @@ pub fn init_setup(state: &State) -> DocumentResult {
 
 pub fn init_setup_post(state: &State, post: Vec<u8>) -> DocumentResult {
     {
+        // Have this in a separate scope so the connection lock gets dropped
         let connection = &DbConnection::borrow_from(state).lock()?;
         if user::count(connection)? > 0 {
             return Err(failure::err_msg("Initial setup already complete"));

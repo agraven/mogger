@@ -1,5 +1,13 @@
 * Implement MaybeSession?
 * Use ArticleIdPath where appropriate
 * Site administration
-* use |safe filter instead of escape = none
 * configurable base url
+* Cookie security settings
+* Don't salt twice
+* DieselResult defined in db.rs
+* Move pub use Connection and DbConnection to db.rs?
+* Username character sanitisation
+* More cows
+* GDPR things
+	- 'Download my data' functionality
+	- Privacy policy

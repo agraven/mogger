@@ -1,3 +1,4 @@
+use askama::Template;
 use futures::{future, Future, Stream};
 use gotham::{
     handler::{HandlerFuture, IntoHandlerError},
@@ -6,13 +7,26 @@ use gotham::{
 };
 use http::{Response, StatusCode};
 use hyper::Body;
-use std::fmt::Display;
+
+use crate::{
+    document::TemplateExt,
+    user::{Permission, Session},
+    Connection, DbConnection,
+};
 
 pub mod articles;
 pub mod comments;
 pub mod index;
 pub mod rss;
 pub mod users;
+
+#[derive(Template)]
+#[template(path = "error.html")]
+struct ErrorTemplate<'a> {
+    session: Option<&'a Session>,
+    connection: &'a Connection,
+    error: String,
+}
 
 pub fn body_handler<F>(mut state: State, op: F) -> Box<HandlerFuture>
 where
@@ -31,13 +45,22 @@ where
     Box::new(f)
 }
 
-pub fn error_response(state: &State, content: impl Display) -> Response<Body> {
-    create_response(
-        state,
-        StatusCode::INTERNAL_SERVER_ERROR,
-        mime::TEXT_PLAIN,
-        format!("{}", content),
-    )
+pub fn error_response(state: &State, error: impl std::fmt::Display) -> Response<Body> {
+    if let Some(ref connection) = DbConnection::borrow_from(state).lock().ok() {
+        let template = ErrorTemplate {
+            session: Session::try_borrow_from(state),
+            connection,
+            error: error.to_string(),
+        };
+        template.to_response(state)
+    } else {
+        create_response(
+            state,
+            StatusCode::INTERNAL_SERVER_ERROR,
+            mime::TEXT_PLAIN,
+            format!("{}", error),
+        )
+    }
 }
 
 pub fn response(state: &State, result: Result<Response<Body>, failure::Error>) -> Response<Body> {

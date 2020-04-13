@@ -67,9 +67,40 @@ pre {
 	background: #e4cfc9;
 	margin: 1em;
 	padding: 12px;
+	overflow-x: scroll;
+}
+code {
+	font-family: "Oxygen Mono";
 }
 .footnotes {
 	font-size: small;
+}
+blockquote {
+	border-left: 2px solid gray;
+	margin-left: 1em;
+	padding-left: 12px;
+	color: darkslategray;
+}
+article img {
+	max-width: 95%;
+	max-height: 360px;
+	display: block;
+	margin: auto;
+}
+
+/* logo */
+.logo {
+	font-size: 50px;
+	font-weight: bold;
+	vertical-align: middle;
+	margin: 2rem 0;
+}
+.logo span {
+	display: inline-block;
+	vertical-align: middle;
+}
+.logo img {
+	vertical-align: middle;
 }
 
 /* nav bar */

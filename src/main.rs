@@ -178,6 +178,22 @@ fn router(settings: &Settings) -> Router {
             .get("/user/:user")
             .with_path_extractor::<users::UserPath>()
             .to(handler!(document::index::user));
+        route
+            .get("/user/:user/edit")
+            .with_path_extractor::<users::UserPath>()
+            .to(handler!(document::index::user_edit));
+        route
+            .post("/user/:user/profile")
+            .with_path_extractor::<users::UserPath>()
+            .to(body_handler!(document::index::user_profile_post));
+        route
+            .post("/user/:user/password")
+            .with_path_extractor::<users::UserPath>()
+            .to(body_handler!(document::index::user_password_post));
+        route
+            .post("/user/:user/delete")
+            .with_path_extractor::<users::UserPath>()
+            .to(body_handler!(document::index::user_delete_post));
 
         route.get("/login").to(handler!(document::index::login));
         route

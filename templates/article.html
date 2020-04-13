@@ -1,6 +1,6 @@
 {% extends "root.html" %}
 
-{% block title %}Amanda's blog - {{ article.title|e }}{% endblock %}
+{% block title %}Amanda's blog - {{ article.title }}{% endblock %}
 
 {% block head %}
 	<link href="/file/comment.css" rel="stylesheet" type="text/css">
@@ -21,7 +21,7 @@
 {% block content %}
 	<article>
 		<header>
-			<h1>{{ article.title|escape }}</h1>
+			<h1>{{ article.title }}</h1>
 			<time title="{{ article.date.format("%c") }}" datetime="{{ article.date.format("%F %T") }}">
 				{{ article.date.format("%d %b %Y - %H:%M") }}
 			</time>
@@ -36,7 +36,7 @@
 	</article>
 
 	<form class="comment" id="new-comment">
-		<h1>Write a comment</h1>
+		<h2>Write a comment</h2>
 		<input type="hidden" name="article" data-type="int" value="{{ article.id }}">
 		<input type="hidden" name="visible" data-type="bool" value="true">
 		<div class="error"></div>
@@ -51,6 +51,6 @@
 	</form>
 
 	{% for tree in comments %}
-		{{ tree.render().unwrap() }}
+		{{ tree.render().unwrap()|safe }}
 	{% endfor %}
 {% endblock %}

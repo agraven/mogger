@@ -8,7 +8,7 @@
 		{% when None %}
 			<span class="name">{{ comment.name.as_ref().unwrap() }}</span>
 		{% endmatch %}
-		<time title="{{ comment.date.format("%c") }}">{{ comment.date.format("%d %b %y %H:%M") }}</time>
+		<time title="{{ comment.date.format("%c") }}">{{ comment.date.format("%d %b %Y %H:%M") }}</time>
 	</header>
 	<div class="body">
 		{% if comment.visible -%}

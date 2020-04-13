@@ -1,7 +1,7 @@
 use bcrypt::BcryptError;
 use chrono::{Duration, NaiveDateTime, Utc};
 use cookie::CookieJar;
-use diesel::{prelude::*, result::Error as DieselError, PgConnection as Connection};
+use diesel::{prelude::*, result::Error as DieselError};
 use diesel_derive_enum::DbEnum;
 use futures::future;
 use gotham::{
@@ -14,9 +14,11 @@ use gotham_derive::{NewMiddleware, StateData};
 use rand::prelude::*;
 use sha2::{Digest, Sha256};
 
+use std::borrow::Cow;
+
 use crate::{
     schema::{groups, sessions, users},
-    DbConnection,
+    Connection, DbConnection,
 };
 
 const SALT_LEN: usize = 16;
@@ -55,6 +57,18 @@ impl User {
         let group: Group = dsl::groups.find(&self.group).first(connection)?;
         Ok(group.permissions.contains(&permission) || group.permissions.contains(&Permission::All))
     }
+
+    pub fn editable(
+        &self,
+        session: Option<&Session>,
+        conn: &Connection,
+    ) -> Result<bool, DieselError> {
+        if let Some(session) = session {
+            Ok(session.allowed(Permission::EditForeignUser, conn)? || session.user == self.id)
+        } else {
+            Ok(false)
+        }
+    }
 }
 
 /// A to be created user.
@@ -70,7 +84,14 @@ pub struct NewUser {
     name: String,
     /// The user's email address
     email: String,
+    #[serde(default = "default_group")]
     group: String,
+    /// Venus fly trap for spam bots
+    pub secret: String,
+}
+
+fn default_group() -> String {
+    String::from("default")
 }
 
 impl NewUser {
@@ -86,6 +107,13 @@ impl NewUser {
             group: self.group,
         }
     }
+}
+
+#[derive(AsChangeset, Deserialize, Serialize)]
+#[table_name = "users"]
+pub struct UserProfile {
+    pub name: String,
+    pub email: String,
 }
 
 /// Login credentials
@@ -122,6 +150,14 @@ impl From<NewUser> for Login {
             password: u.password,
         }
     }
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct PasswordChange<'a> {
+    #[serde(borrow)]
+    old: Cow<'a, str>,
+    #[serde(borrow)]
+    new: Cow<'a, str>,
 }
 
 #[derive(Clone, Queryable, Insertable, Serialize, StateData)]
@@ -251,21 +287,103 @@ pub fn logout(connection: &Connection, session: &str) -> Result<usize, DieselErr
     diesel::delete(dsl::sessions.find(session)).execute(connection)
 }
 
+pub fn edit_profile(
+    connection: &Connection,
+    id: &str,
+    profile: &UserProfile,
+) -> Result<usize, DieselError> {
+    use crate::schema::users::dsl;
+
+    diesel::update(dsl::users.find(id))
+        .set(profile)
+        .execute(connection)
+}
+
+pub fn change_password(
+    connection: &Connection,
+    id: &str,
+    change: &PasswordChange,
+) -> Result<bool, failure::Error> {
+    use crate::schema::users::dsl;
+
+    let (old_hash, salt): (String, Vec<u8>) = dsl::users
+        .select((dsl::hash, dsl::salt))
+        .find(id)
+        .first(connection)?;
+
+    // Verify password
+    if !verify(&change.old, &salt, &old_hash)? {
+        return Ok(false);
+    }
+
+    // Get new hash and salt
+    let new_salt: Box<[u8]> = Box::new(generate_salt());
+    let new_salt = new_salt.into_vec();
+    let new_hash = hash(&change.new, &new_salt)?;
+
+    // Write new values to database
+    diesel::update(dsl::users.find(id))
+        .set((dsl::hash.eq(&new_hash), dsl::salt.eq(&new_salt)))
+        .execute(connection)?;
+    Ok(true)
+}
+
+#[derive(Serialize, Deserialize)]
+pub struct UserDeletion<'a> {
+    #[serde(borrow)]
+    password: Cow<'a, str>,
+    #[serde(default)]
+    pub purge: bool,
+}
+
+pub fn delete(
+    connection: &Connection,
+    id: &str,
+    deletion: &UserDeletion,
+) -> Result<(), failure::Error> {
+    use crate::schema::comments::dsl as c;
+    use crate::schema::sessions::dsl as s;
+    use crate::schema::users::dsl as u;
+
+    // Verify password
+    // TODO: turn this select into a function
+    let (salt, hash): (Vec<u8>, String) = u::users
+        .select((u::salt, u::hash))
+        .find(id)
+        .first(connection)?;
+    if !verify(&deletion.password, &salt, &hash)? {
+        return Err(failure::err_msg("Wrong password"));
+    }
+
+    // We have to make this variable because types can't be inferred for None
+    let none_str: Option<String> = None;
+    if deletion.purge {
+        // purge contents of user's comments
+        diesel::update(c::comments.filter(c::author.eq(&id)))
+            .set((
+                c::author.eq(none_str),
+                c::name.eq("[deleted]"),
+                c::content.eq(""),
+            ))
+            .execute(connection)?;
+    } else {
+        // Remove ownership for user's comments
+        diesel::update(c::comments.filter(c::author.eq(&id)))
+            .set((c::author.eq(none_str), c::name.eq("[deleted]")))
+            .execute(connection)?;
+    }
+    // Delete all sessions
+    diesel::delete(s::sessions.filter(s::user.eq(&id))).execute(connection)?;
+
+    diesel::delete(u::users.find(id)).execute(connection)?;
+    Ok(())
+}
+
 pub fn count(connection: &Connection) -> Result<i64, DieselError> {
     use crate::schema::users::dsl::*;
 
     users.count().first(connection)
 }
-
-/*table! {
-    use diesel::types::Varchar;
-    use diesel::sql_types::Array;
-    use super::PermissionMapping;
-    groups (name) {
-        name -> Varchar,
-        permissions -> Array<PermissionMapping>,
-    }
-}*/
 
 #[derive(Clone, Debug, Queryable, Identifiable, Insertable)]
 #[table_name = "groups"]

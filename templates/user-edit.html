@@ -1,0 +1,55 @@
+{% extends "root.html" %}
+
+{% block head %}
+	<link href="/file/form.css" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block content %}
+	<article>
+		<header>
+			<h1>Edit profile</h1>
+		</header>
+		<p>Edit your profile information:
+		<form method="post" action="/user/{{ user.id }}/profile">
+			<div>
+				<label for="email">E-mail address: </label>
+				<input type="email" id="email" name="email" value="{{ user.email }}" required>
+			</div>
+			<div>
+				<label for="name">Display name: </label>
+				<input type="text" id="name" name="name" value="{{ user.name }}" required>
+			</div>
+
+			<input type="submit" value="Save changes">
+		</form>
+
+		<p>Change your password:
+		<form method="post" action="/user/{{ user.id }}/password">
+			<div>
+				<label for="old">Current password: </label>
+				<input type="password" id="old" name="old" required>
+			</div>
+			<div>
+				<label>New password: </label>
+				<input type="password" id="old" name="new" required>
+			</div>
+
+			<input type="submit" value="Save changes">
+		</form>
+
+		<p>Delete your account:
+		<form method="post" action="/user/{{ user.id }}/delete">
+			<div>
+				<label for="delete-password">Enter your password</label>
+				<input type="password" id="delete-password" name="password">
+			</div>
+			<div>
+				<label for="purge">Delete ALL data</label>
+				<input type="checkbox" id="purge" name="purge" value="true">
+			</div>
+
+			<input type="submit" value="Delete account">
+		</form>
+
+	</article>
+{% endblock %}

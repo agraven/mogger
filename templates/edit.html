@@ -7,6 +7,16 @@
 			element.style.height = "auto";
 			element.style.height = (element.scrollHeight + 10) + "px";
 		}
+
+		function init() {
+			auto_resize(document.querySelector("textarea"));
+		}
+		
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', init);
+		} else {
+			init();
+		}
 	</script>
 {% endblock head %}
 

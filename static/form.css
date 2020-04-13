@@ -11,7 +11,7 @@ article form label, article form input {
   margin-bottom: 10px;
 }
 article form label {
-  width: 8em;
+  width: 10em;
   text-align: left;
 }
 textarea {
@@ -26,4 +26,7 @@ article form div.sumbit {
   margin: auto;
   margin-top: 20px;
   display: block;
+}
+.secret {
+	display: none !important;
 }

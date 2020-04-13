@@ -28,3 +28,9 @@
 	font-weight: normal;
 	src: local('Montserrat Regular'), local('Montserrat-Regular'), url('montserrat.woff2');
 }
+@font-face {
+	font-family: 'Oxygen Mono';
+	font-style: normal;
+	font-weight: normal;
+	src: local('Oxygen Mono'), local('Oxygen-Mono'), url('oxygen-mono.woff2');
+}
