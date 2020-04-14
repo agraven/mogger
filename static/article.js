@@ -32,6 +32,10 @@ function send(form) {
 	let data = new FormData(form);
 	let request = new XMLHttpRequest();
 	let object = formToObject(data, form);
+	// Don't send an empty comment
+	if (!form.checkValidity() || object.content === "") {
+		return;
+	}
 
 	// Error handling
 	const errorHandler = function() {
@@ -45,6 +49,7 @@ function send(form) {
 			form.querySelector(".error").innerHTML = "An error happened: "+request.statusText+": "+request.responseText;
 			return;
 		}
+		form.reset();
 		let comment = JSON.parse(this.response);
 		renderRequest.open("GET", "/api/comments/render/" + comment.id);
 		renderRequest.send();
@@ -126,6 +131,11 @@ function sendEdit(contentElement, form, id) {
 
 function remove(comment) {
 	let request = new XMLHttpRequest();
+	request.addEventListener('loadend', function() {
+		if (this.status === 200) {
+			comment.querySelector('.body').innerHTML = "[deleted]";
+		}
+	}, false);
 	request.open("GET", "/api/comments/delete/" + comment.getAttribute("data-id"));
 	request.send();
 }
@@ -133,6 +143,11 @@ function remove(comment) {
 function purge(comment) {
 	if (confirm("This will permanently delete the selected comment and cannot be undone. Continue?")) {
 		let request = new XMLHttpRequest();
+		request.addEventListener('loadend', function() {
+			if (this.status === 200) {
+				comment.remove();
+			}
+		}, false);
 		request.open("GET", "/api/comments/purge/" + comment.getAttribute("data-id"));
 		request.send();
 	}

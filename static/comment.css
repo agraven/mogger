@@ -40,6 +40,8 @@ form.comment textarea {
   overflow: hidden;
   min-height: 50px;
   width: 100%;
+  padding: 5px;
+  box-sizing: border-box;
   font-family: "Merriweather", serif;
   font-size: 14px;
   color: black;

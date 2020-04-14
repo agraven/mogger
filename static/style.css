@@ -67,7 +67,7 @@ pre {
 	background: #e4cfc9;
 	margin: 1em;
 	padding: 12px;
-	overflow-x: scroll;
+	overflow-x: auto;
 }
 code {
 	font-family: "Oxygen Mono";
@@ -86,6 +86,9 @@ article img {
 	max-height: 360px;
 	display: block;
 	margin: auto;
+}
+hr {
+	margin: 10px;
 }
 
 /* logo */
@@ -194,4 +197,27 @@ button.link-like:hover {
 
 .error {
 	color: #F00;
+}
+
+/* media queries for smaller screens */
+@media (width < 510px) {
+	article {
+		padding: 2em;
+	}
+	.logo img {
+		width: 80px;
+		height: 80px;
+	}
+	.logo {
+		font-size: 40px;
+	}
+}
+@media (width < 415px) {
+	.logo img {
+		width: 50px;
+		height: 50px;
+	}
+	.logo {
+		font-size: 35px;
+	}
 }

@@ -364,12 +364,17 @@ pub fn delete(
                 c::author.eq(none_str),
                 c::name.eq("[deleted]"),
                 c::content.eq(""),
+                c::visible.eq(false),
             ))
             .execute(connection)?;
     } else {
         // Remove ownership for user's comments
         diesel::update(c::comments.filter(c::author.eq(&id)))
-            .set((c::author.eq(none_str), c::name.eq("[deleted]")))
+            .set((
+                c::author.eq(none_str),
+                c::name.eq("[deleted]"),
+                c::visible.eq(false),
+            ))
             .execute(connection)?;
     }
     // Delete all sessions
