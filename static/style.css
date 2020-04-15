@@ -200,7 +200,7 @@ button.link-like:hover {
 }
 
 /* media queries for smaller screens */
-@media (width < 510px) {
+@media (max-width: 510px) {
 	article {
 		padding: 2em;
 	}
@@ -212,7 +212,7 @@ button.link-like:hover {
 		font-size: 40px;
 	}
 }
-@media (width < 415px) {
+@media (max-width: 415px) {
 	.logo img {
 		width: 50px;
 		height: 50px;
