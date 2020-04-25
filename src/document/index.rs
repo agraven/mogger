@@ -2,7 +2,7 @@ use askama::Template;
 use cookie::Cookie;
 use gotham::{
     helpers::http::response::{create_empty_response, create_temporary_redirect as temp_redirect},
-    state::{FromState, State},
+    state::{client_addr, FromState, State},
 };
 use hyper::{header, StatusCode};
 
@@ -219,15 +219,24 @@ struct SignupResultTemplate<'a> {
 
 pub fn signup_post(state: &State, post: Vec<u8>) -> DocumentResult {
     let new_user: NewUser = serde_urlencoded::from_bytes(&post)?;
+
+    // If the `phone` field is filled out we caught a spammer
     if !new_user.phone.is_empty() {
+        // Get client ip address as string
+        let addr = match client_addr(state) {
+            Some(addr) => format!("{}", addr),
+            None => String::new(),
+        };
+        // Log spam attempt
         println!(
-            "Caught spam user with id '{}', name '{}'",
-            new_user.id, new_user.name
+            "Caught spam user with id '{}' and client IP '{}'",
+            new_user.id, addr,
         );
         return Err(failure::err_msg(
             "You're not supposed to fill out this field",
         ));
     }
+
     let connection = &DbConnection::borrow_from(state).lock()?;
     // TODO: check password strength and other input validation
     user::create(connection, new_user.clone())?;
