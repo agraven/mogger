@@ -77,17 +77,17 @@ impl User {
 #[derive(Clone, Deserialize, Serialize)]
 pub struct NewUser {
     /// The username
-    id: String,
+    pub id: String,
     /// The users raw password
     password: String,
     /// The user's display name
-    name: String,
+    pub name: String,
     /// The user's email address
-    email: String,
+    pub email: String,
     #[serde(default = "default_group")]
-    group: String,
-    /// Venus fly trap for spam bots
-    pub secret: String,
+    pub group: String,
+    /// Fake phone number input to catch spambots that fill out hidden fields.
+    pub phone: String,
 }
 
 fn default_group() -> String {

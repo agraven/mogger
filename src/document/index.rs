@@ -219,7 +219,11 @@ struct SignupResultTemplate<'a> {
 
 pub fn signup_post(state: &State, post: Vec<u8>) -> DocumentResult {
     let new_user: NewUser = serde_urlencoded::from_bytes(&post)?;
-    if !new_user.secret.is_empty() {
+    if !new_user.phone.is_empty() {
+        println!(
+            "Caught spam user with id '{}', name '{}'",
+            new_user.id, new_user.name
+        );
         return Err(failure::err_msg(
             "You're not supposed to fill out this field",
         ));
