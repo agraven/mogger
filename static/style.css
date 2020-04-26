@@ -195,6 +195,28 @@ button.link-like:hover {
 	text-decoration: underline
 }
 
+/* Default form element styling */
+input[type="text"], input[type="email"], input[type="password"], input[type="tel"] {
+	height: 22px;
+	width: 192px;
+	background: white;
+	border: 1px #cfd6e6 solid;
+	padding: 2px 8px;
+	border-radius: 3px;
+}
+input:focus {
+	border-color: #8d1e9e;
+	box-shadow: none;
+}
+form.validate input:invalid:not(:placeholder-shown) {
+	background: white no-repeat right 5px center / 20px url("/file/warning.svg");
+	border-color: red;
+	box-shadow: none;
+}
+form.validate input:invalid:not(:placeholder-shown):not(:focus) {
+	box-shadow: 0 0 3px red;
+}
+
 .error {
 	color: #F00;
 }

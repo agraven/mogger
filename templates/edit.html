@@ -11,7 +11,7 @@
 		function init() {
 			auto_resize(document.querySelector("textarea"));
 		}
-		
+
 		if (document.readyState === 'loading') {
 			document.addEventListener('DOMContentLoaded', init);
 		} else {
@@ -30,7 +30,7 @@
 {% when Some with (session) %}
 	<article>
 		<header><h1>Write an article</h1></header>
-		<form method="post">
+		<form method="post" class="validate">
 		{% match article %}
 		{% when None %}
 			<div>
@@ -39,7 +39,7 @@
 			</div>
 			<div>
 				<label for="url">URL: </label>
-				<input type="text" name="url" id="url" required>
+				<input type="text" name="url" id="url" pattern="^[^\x22&,@#$%+^*:?;<=>[\]`{|}]+$" required>
 			</div>
 			<input type="hidden" name="author" value="{{ session.user }}">
 			<textarea name="content" oninput="auto_resize(this)" required></textarea>

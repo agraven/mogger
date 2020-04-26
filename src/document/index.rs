@@ -225,7 +225,7 @@ pub fn signup_post(state: &State, post: Vec<u8>) -> DocumentResult {
         // Get client ip address as string
         let addr = match client_addr(state) {
             Some(addr) => format!("{}", addr),
-            None => String::new(),
+            None => String::from("unavailable"),
         };
         // Log spam attempt
         println!(

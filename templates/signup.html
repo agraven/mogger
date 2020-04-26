@@ -10,22 +10,22 @@
 			<h1>Sign up</h1>
 		</header>
 		<p>Create an account.
-		<form method="post">
+		<form method="post" class="validate">
 			<div>
 				<label for="user">Username: </label>
-				<input type="text" name="id" id="user" required>
+				<input type="text" name="id" id="user" placeholder="unique-user-name" required>
 			</div>
 			<div>
 				<label for="password">Password: </label>
-				<input type="password" name="password" id="password" required>
+				<input type="password" name="password" id="password" minlength="8" placeholder="longandsecurepassword" required>
 			</div>
 			<div>
 				<label for="email">E-mail address: </label>
-				<input type="email" name="email" id="email" required>
+				<input type="email" name="email" id="email" placeholder="address@site.com" required>
 			</div>
 			<div>
 				<label for="display-name">Display name: </label>
-				<input type="text" name="name" id="display-name" required>
+				<input type="text" name="name" id="display-name" placeholder="Very Cool Name" required>
 			</div>
 			<div class="secret">
 				<label for="phone">Phone number: </label>

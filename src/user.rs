@@ -23,6 +23,7 @@ use crate::{
 
 const SALT_LEN: usize = 16;
 const SESSION_LEN: usize = 24;
+const MIN_PASSWORD_LEN: usize = 8;
 
 #[derive(Debug, Deserialize, Serialize, Queryable, Identifiable, Insertable)]
 pub struct User {
@@ -79,7 +80,7 @@ pub struct NewUser {
     /// The username
     pub id: String,
     /// The users raw password
-    password: String,
+    pub password: String,
     /// The user's display name
     pub name: String,
     /// The user's email address
@@ -269,10 +270,22 @@ fn generate_salt() -> [u8; SALT_LEN] {
 }
 
 /// Creates a user
-pub fn create(connection: &Connection, user: NewUser) -> Result<usize, DieselError> {
-    diesel::insert_into(users::table)
+pub fn create(connection: &Connection, user: NewUser) -> Result<usize, failure::Error> {
+    let id = &user.id;
+    // Check username characters
+    if id.contains(|c: char| !(c.is_alphanumeric() || c == '-' || c == '_')) {
+        return Err(failure::err_msg("Username contains illegal character"));
+    }
+    // Check minimum password length
+    if user.password.len() < MIN_PASSWORD_LEN {
+        return Err(failure::err_msg(format!(
+            "Passwords must be at least {} characters long",
+            MIN_PASSWORD_LEN
+        )));
+    }
+    Ok(diesel::insert_into(users::table)
         .values(&user.into_user())
-        .execute(connection)
+        .execute(connection)?)
 }
 
 pub fn get(connection: &Connection, id: &str) -> Result<User, DieselError> {

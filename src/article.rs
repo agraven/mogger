@@ -13,6 +13,12 @@ use crate::user::{Permission, Session, User};
 const PREVIEW_LEN: usize = 500;
 const DESCRIPTION_LEN: usize = 160;
 
+/// Characters that aren't allowed in article urls.
+const ILLEGAL_URL_CHARS: &'static [char] = &[
+    '^', '"', '&', ',', '@', '#', '$', '%', '+', '*', ':', '?', ';', '<', '>', '[', ']', '`', '{',
+    '}',
+];
+
 #[derive(Debug, Deserialize, Serialize, Queryable, Identifiable)]
 pub struct Article {
     /// The article's numeric id
@@ -155,10 +161,13 @@ pub fn view(connection: &Connection, name: &str) -> Result<Article, DieselError>
     }
 }
 
-pub fn submit(connection: &Connection, article: &NewArticle) -> Result<usize, DieselError> {
-    diesel::insert_into(articles::table)
+pub fn submit(connection: &Connection, article: &NewArticle) -> Result<usize, failure::Error> {
+    if article.url.contains(|c| ILLEGAL_URL_CHARS.contains(&c)) {
+        return Err(failure::err_msg("Illegal character in article url"));
+    }
+    Ok(diesel::insert_into(articles::table)
         .values(article)
-        .execute(connection)
+        .execute(connection)?)
 }
 
 pub fn edit(
