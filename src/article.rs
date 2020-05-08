@@ -14,7 +14,7 @@ const PREVIEW_LEN: usize = 500;
 const DESCRIPTION_LEN: usize = 160;
 
 /// Characters that aren't allowed in article urls.
-const ILLEGAL_URL_CHARS: &'static [char] = &[
+const ILLEGAL_URL_CHARS: &[char] = &[
     '^', '"', '&', ',', '@', '#', '$', '%', '+', '*', ':', '?', ';', '<', '>', '[', ']', '`', '{',
     '}',
 ];
@@ -47,7 +47,7 @@ impl Article {
         conn: &Connection,
     ) -> Result<bool, DieselError> {
         if self.visible {
-            return Ok(true);
+            Ok(true)
         } else {
             self.editable(session, conn)
         }

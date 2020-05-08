@@ -9,9 +9,9 @@ use http::{Response, StatusCode};
 use hyper::Body;
 
 use crate::{
+    db::{Connection, DbConnection},
     document::TemplateExt,
     user::{Permission, Session},
-    Connection, DbConnection,
 };
 
 pub mod articles;
@@ -28,6 +28,7 @@ struct ErrorTemplate<'a> {
     error: String,
 }
 
+/// Creates a `HandlerFuture` that runs the given function
 pub fn body_handler<F>(mut state: State, op: F) -> Box<HandlerFuture>
 where
     F: FnOnce(&State, Vec<u8>) -> Response<Body> + Send + 'static,
@@ -46,7 +47,7 @@ where
 }
 
 pub fn error_response(state: &State, error: impl std::fmt::Display) -> Response<Body> {
-    if let Some(ref connection) = DbConnection::borrow_from(state).lock().ok() {
+    if let Ok(ref connection) = DbConnection::borrow_from(state).lock() {
         let template = ErrorTemplate {
             session: Session::try_borrow_from(state),
             connection,

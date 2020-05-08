@@ -1,5 +1,5 @@
 use askama::Template;
-use cookie::Cookie;
+use cookie::{Cookie, SameSite};
 use gotham::{
     helpers::http::response::{create_empty_response, create_temporary_redirect as temp_redirect},
     state::{client_addr, FromState, State},
@@ -10,6 +10,7 @@ use super::{DocumentResult, TemplateExt};
 use crate::{
     article::{self, Article, ArticleChanges, NewArticle},
     comment::{self, Comment},
+    db::{Connection, DbConnection},
     handler::{
         articles::{ArticleIdPath, ArticlePath},
         users::UserPath,
@@ -19,8 +20,18 @@ use crate::{
         Permission::{CreateArticle, EditArticle, EditForeignArticle},
         Session, User, UserDeletion, UserProfile,
     },
-    Connection, DbConnection,
 };
+
+fn session_cookie<'a>(state: &State, id: &str) -> Cookie<'a> {
+    let mut cookie = Cookie::build("session", id.to_owned())
+        .same_site(SameSite::Strict)
+        .http_only(true)
+        .finish();
+    if http::Uri::borrow_from(state).scheme_part() == Some(&http::uri::Scheme::HTTPS) {
+        cookie.set_secure(true);
+    }
+    cookie
+}
 
 #[derive(Template)]
 #[template(path = "index.html")]
@@ -31,7 +42,7 @@ pub struct Index<'a> {
 }
 
 pub fn handler(state: &State) -> DocumentResult {
-    let connection = &DbConnection::borrow_from(state).lock()?;
+    let connection = &DbConnection::from_state(state)?;
 
     // If there are no users, redirect to initial setup.
     if user::count(connection)? <= 0 {
@@ -59,7 +70,7 @@ pub struct AboutTemplate<'a> {
 }
 
 pub fn about(state: &State) -> DocumentResult {
-    let connection = &DbConnection::borrow_from(state).lock()?;
+    let connection = &DbConnection::from_state(state)?;
     let template = AboutTemplate {
         session: Session::try_borrow_from(state),
         connection,
@@ -125,7 +136,7 @@ impl<'a> CommentTemplate<'a> {
     ) -> Vec<Self> {
         list.iter()
             .map(|comment| CommentTemplate {
-                comment: comment,
+                comment,
                 children: Vec::new(),
                 connection,
                 session,
@@ -135,7 +146,7 @@ impl<'a> CommentTemplate<'a> {
 }
 
 pub fn article(state: &State) -> DocumentResult {
-    let connection = &DbConnection::borrow_from(state).lock()?;
+    let connection = &DbConnection::from_state(state)?;
     let id = &ArticlePath::borrow_from(state).id;
     let session = Session::try_borrow_from(state);
 
@@ -163,7 +174,7 @@ pub fn article(state: &State) -> DocumentResult {
 }
 
 pub fn login(state: &State) -> DocumentResult {
-    let connection = &DbConnection::borrow_from(state).lock()?;
+    let connection = &DbConnection::from_state(state)?;
     Ok(LoginTemplate {
         session: Session::try_borrow_from(state),
         connection,
@@ -172,7 +183,7 @@ pub fn login(state: &State) -> DocumentResult {
 }
 
 pub fn login_post(state: &State, post: Vec<u8>) -> DocumentResult {
-    let connection = &DbConnection::borrow_from(state).lock()?;
+    let connection = &DbConnection::from_state(state)?;
     let credentials: Login = serde_urlencoded::from_bytes(&post)?;
     let new_session = credentials.login(connection)?;
 
@@ -185,7 +196,7 @@ pub fn login_post(state: &State, post: Vec<u8>) -> DocumentResult {
     // Set session cookie if login was successful
     if let Some(session) = new_session {
         // TODO: Add security settings for cookie without breaking debugging.
-        let cookie = Cookie::build("session", session.id).finish();
+        let cookie = session_cookie(state, &session.id);
         response
             .headers_mut()
             .append(header::SET_COOKIE, cookie.to_string().parse()?);
@@ -202,7 +213,7 @@ struct SignupTemplate<'a> {
 }
 
 pub fn signup(state: &State) -> DocumentResult {
-    let connection = &DbConnection::borrow_from(state).lock()?;
+    let connection = &DbConnection::from_state(state)?;
     Ok(SignupTemplate {
         session: Session::try_borrow_from(state),
         connection,
@@ -237,8 +248,7 @@ pub fn signup_post(state: &State, post: Vec<u8>) -> DocumentResult {
         ));
     }
 
-    let connection = &DbConnection::borrow_from(state).lock()?;
-    // TODO: check password strength and other input validation
+    let connection = &DbConnection::from_state(state)?;
     user::create(connection, new_user.clone())?;
     let credentials: Login = new_user.into();
 
@@ -248,7 +258,7 @@ pub fn signup_post(state: &State, post: Vec<u8>) -> DocumentResult {
         connection,
     }
     .to_response(state);
-    let cookie = Cookie::build("session", session.id).finish();
+    let cookie = session_cookie(state, &session.id);
     response
         .headers_mut()
         .append(header::SET_COOKIE, cookie.to_string().parse()?);
@@ -264,7 +274,7 @@ struct LogoutTemplate<'a> {
 }
 
 pub fn logout(state: &State) -> DocumentResult {
-    let connection = &DbConnection::borrow_from(state).lock()?;
+    let connection = &DbConnection::from_state(state)?;
     let session = Session::try_borrow_from(state);
 
     if let Some(session) = session {
@@ -298,7 +308,7 @@ struct UserTemplate<'a> {
 }
 
 pub fn user(state: &State) -> DocumentResult {
-    let connection = &DbConnection::borrow_from(state).lock()?;
+    let connection = &DbConnection::from_state(state)?;
     let session = Session::try_borrow_from(state);
 
     let user_id = &UserPath::borrow_from(state).user;
@@ -325,7 +335,7 @@ struct UserProfileTemplate<'a> {
 }
 
 pub fn user_edit(state: &State) -> DocumentResult {
-    let connection = &DbConnection::borrow_from(state).lock()?;
+    let connection = &DbConnection::from_state(state)?;
     let session = Session::try_borrow_from(state);
 
     let user_id = &UserPath::borrow_from(state).user;
@@ -341,7 +351,7 @@ pub fn user_edit(state: &State) -> DocumentResult {
 
 pub fn user_profile_post(state: &State, post: Vec<u8>) -> DocumentResult {
     let profile: UserProfile = serde_urlencoded::from_bytes(&post)?;
-    let connection = &DbConnection::borrow_from(state).lock()?;
+    let connection = &DbConnection::from_state(state)?;
     let user_id = &UserPath::borrow_from(state).user;
 
     user::edit_profile(connection, user_id, &profile)?;
@@ -353,7 +363,7 @@ pub fn user_profile_post(state: &State, post: Vec<u8>) -> DocumentResult {
 
 pub fn user_password_post(state: &State, post: Vec<u8>) -> DocumentResult {
     let change: PasswordChange = serde_urlencoded::from_bytes(&post)?;
-    let connection = &DbConnection::borrow_from(state).lock()?;
+    let connection = &DbConnection::from_state(state)?;
     let user_id = &UserPath::borrow_from(state).user;
 
     if !user::change_password(connection, &user_id, &change)? {
@@ -366,7 +376,7 @@ pub fn user_password_post(state: &State, post: Vec<u8>) -> DocumentResult {
 }
 
 pub fn user_delete_post(state: &State, post: Vec<u8>) -> DocumentResult {
-    let connection = &DbConnection::borrow_from(state).lock()?;
+    let connection = &DbConnection::from_state(state)?;
     let deletion: UserDeletion = serde_urlencoded::from_bytes(&post)?;
     let user_id = &UserPath::borrow_from(state).user;
 
@@ -386,7 +396,7 @@ struct EditTemplate<'a> {
 }
 
 pub fn edit(state: &State) -> DocumentResult {
-    let connection = &DbConnection::borrow_from(state).lock()?;
+    let connection = &DbConnection::from_state(state)?;
     let article = match ArticleIdPath::try_borrow_from(state) {
         Some(path) => Some(article::view(connection, &path.id.to_string())?),
         None => None,
@@ -401,7 +411,7 @@ pub fn edit(state: &State) -> DocumentResult {
 
 pub fn edit_post(state: &State, post: Vec<u8>) -> DocumentResult {
     let session = Session::try_borrow_from(state);
-    let conn = &DbConnection::borrow_from(state).lock()?;
+    let conn = &DbConnection::from_state(state)?;
 
     let url = if let Some(path) = ArticleIdPath::try_borrow_from(state) {
         let changes: ArticleChanges = serde_urlencoded::from_bytes(&post)?;
@@ -428,7 +438,6 @@ pub fn edit_post(state: &State, post: Vec<u8>) -> DocumentResult {
             _ => return Err(failure::err_msg("Permission denied")),
         }
 
-        // TODO: url server side format validation
         article::submit(conn, &new_article)?;
         new_article.url
     };
@@ -447,7 +456,7 @@ pub struct InitSetupTemplate<'a> {
 }
 
 pub fn init_setup(state: &State) -> DocumentResult {
-    let connection = &DbConnection::borrow_from(state).lock()?;
+    let connection = &DbConnection::from_state(state)?;
     Ok(InitSetupTemplate {
         session: Session::try_borrow_from(state),
         connection,
@@ -458,7 +467,7 @@ pub fn init_setup(state: &State) -> DocumentResult {
 pub fn init_setup_post(state: &State, post: Vec<u8>) -> DocumentResult {
     {
         // Have this in a separate scope so the connection lock gets dropped
-        let connection = &DbConnection::borrow_from(state).lock()?;
+        let connection = &DbConnection::from_state(state)?;
         if user::count(connection)? > 0 {
             return Err(failure::err_msg("Initial setup already complete"));
         }

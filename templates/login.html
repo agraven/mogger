@@ -10,8 +10,7 @@
 			<h1>Log in</h1>
 		</header>
 		{% if session.is_some() %}
-			<!-- TODO: Insert sign out link -->
-			<p>You are already logged in. Would you like to <a>sign out</a>?
+			<p>You are already logged in. Would you like to <a href="/logout">sign out</a>?
 		{% else %}
 			<p>Please enter your login information
 			<form method="post">

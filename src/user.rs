@@ -1,7 +1,7 @@
 use bcrypt::BcryptError;
 use chrono::{Duration, NaiveDateTime, Utc};
 use cookie::CookieJar;
-use diesel::{prelude::*, result::Error as DieselError};
+use diesel::prelude::*;
 use diesel_derive_enum::DbEnum;
 use futures::future;
 use gotham::{
@@ -17,8 +17,8 @@ use sha2::{Digest, Sha256};
 use std::borrow::Cow;
 
 use crate::{
+    db::{Connection, DbConnection, DieselResult},
     schema::{groups, sessions, users},
-    Connection, DbConnection,
 };
 
 const SALT_LEN: usize = 16;
@@ -48,22 +48,14 @@ impl User {
     }
 
     /// Checks if a user has a given permission.
-    pub fn allowed(
-        &self,
-        permission: Permission,
-        connection: &Connection,
-    ) -> Result<bool, DieselError> {
+    pub fn allowed(&self, permission: Permission, connection: &Connection) -> DieselResult<bool> {
         use crate::schema::groups::dsl;
 
         let group: Group = dsl::groups.find(&self.group).first(connection)?;
         Ok(group.permissions.contains(&permission) || group.permissions.contains(&Permission::All))
     }
 
-    pub fn editable(
-        &self,
-        session: Option<&Session>,
-        conn: &Connection,
-    ) -> Result<bool, DieselError> {
+    pub fn editable(&self, session: Option<&Session>, conn: &Connection) -> DieselResult<bool> {
         if let Some(session) = session {
             Ok(session.allowed(Permission::EditForeignUser, conn)? || session.user == self.id)
         } else {
@@ -184,26 +176,24 @@ impl Session {
     }
 
     /// Get the session with the specified id
-    pub fn from_id(id: &str, connection: &Connection) -> Result<Option<Session>, DieselError> {
+    pub fn from_id(id: &str, connection: &Connection) -> DieselResult<Option<Session>> {
         sessions::dsl::sessions
             .find(id)
             .first(connection)
             .optional()
     }
 
-    pub fn user(&self, connection: &Connection) -> Result<User, DieselError> {
+    pub fn user(&self, connection: &Connection) -> DieselResult<User> {
         get(connection, &self.user)
     }
 
-    pub fn allowed(
-        &self,
-        permission: Permission,
-        connection: &Connection,
-    ) -> Result<bool, DieselError> {
+    pub fn allowed(&self, permission: Permission, connection: &Connection) -> DieselResult<bool> {
         self.user(connection)?.allowed(permission, connection)
     }
 }
 
+/// Middleware that adds a `Session` to the gotham `State` if a cookie with a valid session id is
+/// set
 #[derive(Clone, NewMiddleware)]
 pub struct SessionMiddleware;
 
@@ -213,14 +203,24 @@ impl Middleware for SessionMiddleware {
         C: FnOnce(State) -> Box<HandlerFuture>,
     {
         let put_session = |state: &mut State| -> Result<(), failure::Error> {
-            let connection = DbConnection::borrow_from(&state).lock()?;
+            let connection = DbConnection::from_state(&state)?;
             let cookie = CookieJar::borrow_from(&state)
                 .get("session")
                 .map(|cookie| cookie.value());
             if let Some(id) = cookie {
-                if let Some(session) = Session::from_id(id, &connection)? {
-                    std::mem::drop(connection);
-                    state.put(session);
+                // Check if session id is valid
+                match Session::from_id(id, &connection)? {
+                    Some(session) if session.expires < Utc::now().naive_utc() => {
+                        // Delete expired session
+                        diesel::delete(sessions::dsl::sessions.find(&session.id))
+                            .execute(&*connection)
+                            .unwrap_or_default();
+                    }
+                    Some(session) => {
+                        std::mem::drop(connection);
+                        state.put(session);
+                    }
+                    _ => (),
                 }
             }
             Ok(())
@@ -288,13 +288,13 @@ pub fn create(connection: &Connection, user: NewUser) -> Result<usize, failure::
         .execute(connection)?)
 }
 
-pub fn get(connection: &Connection, id: &str) -> Result<User, DieselError> {
+pub fn get(connection: &Connection, id: &str) -> DieselResult<User> {
     use crate::schema::users::dsl;
 
     dsl::users.find(id).first(connection)
 }
 
-pub fn logout(connection: &Connection, session: &str) -> Result<usize, DieselError> {
+pub fn logout(connection: &Connection, session: &str) -> DieselResult<usize> {
     use crate::schema::sessions::dsl;
 
     diesel::delete(dsl::sessions.find(session)).execute(connection)
@@ -304,7 +304,7 @@ pub fn edit_profile(
     connection: &Connection,
     id: &str,
     profile: &UserProfile,
-) -> Result<usize, DieselError> {
+) -> DieselResult<usize> {
     use crate::schema::users::dsl;
 
     diesel::update(dsl::users.find(id))
@@ -397,7 +397,7 @@ pub fn delete(
     Ok(())
 }
 
-pub fn count(connection: &Connection) -> Result<i64, DieselError> {
+pub fn count(connection: &Connection) -> DieselResult<i64> {
     use crate::schema::users::dsl::*;
 
     users.count().first(connection)

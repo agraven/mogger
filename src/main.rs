@@ -38,35 +38,30 @@ pub mod schema;
 pub mod user;
 
 use comrak::ComrakOptions;
-pub use diesel::pg::PgConnection as Connection;
 use gotham::{
     middleware::cookie::CookieParser,
     middleware::state::StateMiddleware,
     pipeline::new_pipeline,
     pipeline::single::single_pipeline,
-    //pipeline::single_middleware,
     router::builder::{build_router, DefineSingleRoute, DrawRoutes},
     router::response::extender::ResponseExtender,
     router::Router,
     state::State,
 };
-use gotham_derive::StateData;
 use http::status::StatusCode;
 use hyper::{Body, Response};
 
-use std::{
-    borrow::Cow,
-    path::Path,
-    sync::{Arc, Mutex},
-};
+use std::{borrow::Cow, path::Path};
 
-use crate::user::SessionMiddleware;
+use crate::{db::DbConnection, user::SessionMiddleware};
 
 /// Application wide settings defined in configuration file.
 #[derive(Deserialize)]
 struct Settings<'a> {
+    /// Postgres database url
     #[serde(borrow)]
     database_url: Cow<'a, str>,
+    /// IP address to bind to
     #[serde(borrow)]
     host_address: Cow<'a, str>,
 }
@@ -84,31 +79,6 @@ impl ResponseExtender<Body> for NotFound {
     fn extend(&self, _state: &mut State, res: &mut Response<Body>) {
         let body = res.body_mut();
         *body = "404 File not found".into();
-    }
-}
-
-/// The wrapper for a database connection that can shared via gotham's state data
-#[derive(Clone, StateData)]
-pub struct DbConnection {
-    connection: Arc<Mutex<Connection>>,
-}
-
-impl DbConnection {
-    pub fn from_url(url: &str) -> Self {
-        Self {
-            connection: Arc::new(Mutex::new(db::connect(url).expect("database error"))),
-        }
-    }
-
-    pub fn get(&self) -> Arc<Mutex<Connection>> {
-        self.connection.clone()
-    }
-
-    pub fn lock(&self) -> Result<std::sync::MutexGuard<Connection>, failure::Error> {
-        match self.connection.lock() {
-            Ok(lock) => Ok(lock),
-            Err(_) => Err(failure::err_msg("failed to get lock")),
-        }
     }
 }
 
@@ -131,7 +101,7 @@ pub const COMRAK_OPTS: ComrakOptions = ComrakOptions {
 };
 
 /// Builds the request router
-fn router(settings: &Settings) -> Router {
+fn router(settings: Settings) -> Router {
     // The directory static assets are served from. Is:
     // STATIC_DIR environment varible if defined, otherwise
     // STATIC_DIR compile-time environment variable if defined, otherwise
@@ -307,6 +277,6 @@ fn main() -> Result<(), failure::Error> {
     let address = settings.host_address.clone().into_owned();
 
     println!("Running at {}", address);
-    gotham::start(address, router(&settings));
+    gotham::start(address, router(settings));
     Ok(())
 }

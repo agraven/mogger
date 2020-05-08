@@ -82,7 +82,7 @@ pub fn render(state: &State) -> Result<Response<Body>, failure::Error> {
         let template = crate::document::index::CommentTemplate {
             comment: &comment,
             children: Vec::new(),
-            connection: connection,
+            connection,
             session: Session::try_borrow_from(state),
         };
         Ok(template.to_response(state))
