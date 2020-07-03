@@ -1,2 +1,10 @@
-database_url = "postgres://mogger@localhost/mogger"
+# IP address to bind to
 host_address = "localhost:6096"
+# Postgres url to connect to the database with
+database_url = "postgres://mogger@localhost/mogger"
+
+[cookie]
+# Require HTTPS for cookies
+secure = false
+# Domain restriction on cookies
+#domain = "site.com"

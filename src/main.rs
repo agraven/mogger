@@ -30,6 +30,7 @@ extern crate serde;
 
 pub mod article;
 pub mod comment;
+pub mod config;
 pub mod date_format;
 pub mod db;
 pub mod document;
@@ -37,7 +38,6 @@ pub mod handler;
 pub mod schema;
 pub mod user;
 
-use comrak::ComrakOptions;
 use gotham::{
     middleware::cookie::CookieParser,
     middleware::state::StateMiddleware,
@@ -53,24 +53,7 @@ use hyper::{Body, Response};
 
 use std::{borrow::Cow, path::Path};
 
-use crate::{db::DbConnection, user::SessionMiddleware};
-
-/// Application wide settings defined in configuration file.
-#[derive(Deserialize)]
-struct Settings<'a> {
-    /// Postgres database url
-    #[serde(borrow)]
-    database_url: Cow<'a, str>,
-    /// IP address to bind to
-    #[serde(borrow)]
-    host_address: Cow<'a, str>,
-}
-
-impl<'a> Settings<'a> {
-    pub fn from_slice(data: &'a [u8]) -> Result<Self, toml::de::Error> {
-        toml::from_slice(data)
-    }
-}
+use crate::{config::Settings, db::DbConnection, user::SessionMiddleware};
 
 /// Response extender for 404 errors
 pub struct NotFound;
@@ -81,24 +64,6 @@ impl ResponseExtender<Body> for NotFound {
         *body = "404 File not found".into();
     }
 }
-
-pub const COMRAK_OPTS: ComrakOptions = ComrakOptions {
-    hardbreaks: false,
-    smart: false,
-    github_pre_lang: true,
-    width: 0,
-    default_info_string: None,
-    unsafe_: false,
-    ext_strikethrough: true,
-    ext_tagfilter: false,
-    ext_table: true,
-    ext_autolink: true,
-    ext_tasklist: false,
-    ext_superscript: false,
-    ext_header_ids: None,
-    ext_footnotes: true,
-    ext_description_lists: false,
-};
 
 /// Builds the request router
 fn router(settings: Settings) -> Router {
@@ -117,10 +82,12 @@ fn router(settings: Settings) -> Router {
     // Set up shared state
     let connection = DbConnection::from_url(&settings.database_url);
     let state_mw = StateMiddleware::new(connection);
+    let settings_mw = StateMiddleware::new(settings);
     // Build pipeline
     let (chain, pipelines) = single_pipeline(
         new_pipeline()
             .add(state_mw)
+            .add(settings_mw)
             .add(CookieParser)
             .add(SessionMiddleware)
             .build(),
@@ -274,9 +241,9 @@ fn main() -> Result<(), failure::Error> {
     };
     let data = std::fs::read(path)?;
     let settings = Settings::from_slice(&data)?;
-    let address = settings.host_address.clone().into_owned();
+    let address = settings.host_address.clone();
 
-    println!("Running at {}", address);
+    println!("Running at {}", &address);
     gotham::start(address, router(settings));
     Ok(())
 }

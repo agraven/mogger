@@ -8,7 +8,10 @@ use diesel::RunQueryDsl;
 
 use crate::schema::articles;
 
-use crate::user::{Permission, Session, User};
+use crate::{
+    config::COMRAK_ARTICLE_OPTS,
+    user::{Permission, Session, User},
+};
 
 const PREVIEW_LEN: usize = 500;
 const DESCRIPTION_LEN: usize = 160;
@@ -78,7 +81,7 @@ impl Article {
 
     /// Return the marked up version of the article's body.
     pub fn formatted(&self) -> String {
-        markdown_to_html(&self.content, &crate::COMRAK_OPTS)
+        markdown_to_html(&self.content, &COMRAK_ARTICLE_OPTS)
     }
 
     /// Get a short slice of the article's contents.

@@ -131,7 +131,8 @@ impl Login {
                     .execute(connection)?;
                 Ok(Some(session))
             }
-            _ => Ok(None),
+            Some(_) => Err(failure::err_msg("Not authorized")),
+            None => Ok(None),
         }
     }
 }

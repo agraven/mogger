@@ -3,6 +3,7 @@ use comrak::markdown_to_html;
 use diesel::{pg::PgConnection as Connection, prelude::*, result::Error as DieselError, Queryable};
 
 use crate::{
+    config::COMRAK_OPTS,
     schema::comments,
     user::{self, Permission, Session},
 };
@@ -86,7 +87,7 @@ impl Comment {
     }
 
     pub fn formatted(&self) -> String {
-        markdown_to_html(&self.content, &crate::COMRAK_OPTS)
+        markdown_to_html(&self.content, &COMRAK_OPTS)
     }
 
     pub fn author(&self, connection: &Connection) -> Result<String, failure::Error> {

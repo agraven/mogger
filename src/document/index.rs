@@ -10,6 +10,7 @@ use super::{DocumentResult, TemplateExt};
 use crate::{
     article::{self, Article, ArticleChanges, NewArticle},
     comment::{self, Comment},
+    config::Settings,
     db::{Connection, DbConnection},
     handler::{
         articles::{ArticleIdPath, ArticlePath},
@@ -23,12 +24,16 @@ use crate::{
 };
 
 fn session_cookie<'a>(state: &State, id: &str) -> Cookie<'a> {
+    let settings = Settings::borrow_from(state);
     let mut cookie = Cookie::build("session", id.to_owned())
         .same_site(SameSite::Strict)
         .http_only(true)
         .finish();
-    if http::Uri::borrow_from(state).scheme_part() == Some(&http::uri::Scheme::HTTPS) {
+    if settings.cookie.secure {
         cookie.set_secure(true);
+    }
+    if let Some(ref domain) = settings.cookie.domain {
+        cookie.set_domain(domain.to_owned());
     }
     cookie
 }
@@ -195,7 +200,6 @@ pub fn login_post(state: &State, post: Vec<u8>) -> DocumentResult {
 
     // Set session cookie if login was successful
     if let Some(session) = new_session {
-        // TODO: Add security settings for cookie without breaking debugging.
         let cookie = session_cookie(state, &session.id);
         response
             .headers_mut()

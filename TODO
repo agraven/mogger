@@ -5,6 +5,8 @@
 * Don't salt twice
 * More cows
 * Error handling
+* Separate template for article "header"?
+* Pagination
 * GDPR things
 	- 'Download my data' functionality
 	- Privacy policy
