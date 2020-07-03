@@ -248,14 +248,14 @@ impl Middleware for SessionMiddleware {
 /// [1]: https://blogs.dropbox.com/tech/2016/09/how-dropbox-securely-stores-your-passwords/
 fn hash(key: &str, salt: &[u8]) -> Result<String, BcryptError> {
     // digest the password and salt
-    let digest = Sha256::new().chain(key).chain(salt).result();
+    let digest = Sha256::new().chain(key).chain(salt).finalize();
     // Hash the password with bcrypt (base64 encode to avoid zero-bytes).
     let hash = bcrypt::hash(base64::encode(&digest), bcrypt::DEFAULT_COST)?;
     Ok(hash)
 }
 
 fn verify(key: &str, salt: &[u8], hash: &str) -> Result<bool, BcryptError> {
-    let digest = Sha256::new().chain(key).chain(salt).result();
+    let digest = Sha256::new().chain(key).chain(salt).finalize();
     let matches = bcrypt::verify(&base64::encode(&digest), hash)?;
     Ok(matches)
 }
