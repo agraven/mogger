@@ -130,6 +130,7 @@ pub fn list_flat(connection: &Connection, article: i32) -> Result<Vec<Comment>, 
 
     dsl::comments
         .filter(dsl::article.eq(article))
+        .order(dsl::date.desc())
         .load::<Comment>(connection)
 }
 

@@ -80,6 +80,7 @@ pub struct NewUser {
     #[serde(default = "default_group")]
     pub group: String,
     /// Fake phone number input to catch spambots that fill out hidden fields.
+    #[serde(default)]
     pub phone: String,
 }
 
@@ -131,8 +132,7 @@ impl Login {
                     .execute(connection)?;
                 Ok(Some(session))
             }
-            Some(_) => Err(failure::err_msg("Not authorized")),
-            None => Ok(None),
+            _ => Ok(None),
         }
     }
 }
