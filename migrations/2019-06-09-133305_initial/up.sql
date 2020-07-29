@@ -54,7 +54,7 @@ CREATE TABLE comments (
 	CONSTRAINT chk_author CHECK ((author IS NULL) <> (name IS NULL))
 );
 
-INSERT INTO groups (id, permissions) VALUES 
+INSERT INTO groups (id, permissions) VALUES
 ('admin', '{all}'),
 ('author', '{create_article, edit_article, delete_article, create_comment, edit_comment, edit_foreign_comment, delete_comment, delete_foreign_comment}'),
 ('default', '{create_comment, edit_comment, delete_comment}');

@@ -46,6 +46,7 @@ table! {
         name -> Varchar,
         email -> Varchar,
         group -> Varchar,
+        rehash -> Bool,
     }
 }
 
