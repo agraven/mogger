@@ -134,7 +134,6 @@ impl Login {
             .optional()?;
         match user {
             Some(ref user) if user.rehash && user.verify_old(&self.password)? => {
-                println!("I'm getting run");
                 // Rehash password
                 let new_hash = hash(&self.password)?;
                 diesel::update(dsl::users.find(&user.id))
