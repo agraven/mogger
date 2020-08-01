@@ -95,7 +95,11 @@ fn router(settings: Settings) -> Router {
 
     build_router(chain, pipelines, |route| {
         use crate::handler::{articles, users};
-        route.get("/").to(handler!(document::index::handler));
+        route.get("/").to(handler!(document::index::index));
+        route
+            .get("/page/:page")
+            .with_path_extractor::<document::index::Page>()
+            .to(handler!(document::index::index));
 
         route
             .get("/initial-setup")

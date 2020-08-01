@@ -37,4 +37,12 @@
 		</article>
 		{% endif %}
 	{% endfor %}
+	<nav class="page">
+		{% if page > 1 %}
+			<a id="page-back" rel="prev" href="/page/{{ page - 1 }}">Previous</a>
+		{% endif %}
+		{% if articles.len() == crate::article::PAGE_LEN %}
+			<a id="page-forward" rel="next" href="/page/{{ page + 1 }}">Next</a>
+		{% endif %}
+	</nav>
 {% endblock %}

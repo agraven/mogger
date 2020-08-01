@@ -4,6 +4,7 @@ use gotham::{
     helpers::http::response::{create_empty_response, create_temporary_redirect as temp_redirect},
     state::{client_addr, FromState, State},
 };
+use gotham_derive::{StateData, StaticResponseExtender};
 use hyper::{header, StatusCode};
 
 use super::{DocumentResult, TemplateExt};
@@ -38,15 +39,22 @@ fn session_cookie<'a>(state: &State, id: &str) -> Cookie<'a> {
     cookie
 }
 
+/// Page number in a paginated document
+#[derive(Deserialize, StateData, StaticResponseExtender)]
+pub struct Page {
+    page: i64,
+}
+
 #[derive(Template)]
 #[template(path = "index.html")]
 pub struct Index<'a> {
     articles: Vec<Article>,
+    page: i64,
     session: Option<&'a Session>,
     connection: &'a Connection,
 }
 
-pub fn handler(state: &State) -> DocumentResult {
+pub fn index(state: &State) -> DocumentResult {
     let connection = &DbConnection::from_state(state)?;
 
     // If there are no users, redirect to initial setup.
@@ -54,12 +62,17 @@ pub fn handler(state: &State) -> DocumentResult {
         return Ok(temp_redirect(state, "/initial-setup"));
     }
 
-    let articles = article::list(connection)?;
+    let page = match Page::try_borrow_from(state) {
+        Some(page) => page.page,
+        None => 1,
+    };
+    let articles = article::page(connection, page)?;
 
     let session = Session::try_borrow_from(state);
 
     let template = Index {
         articles,
+        page,
         session,
         connection,
     };

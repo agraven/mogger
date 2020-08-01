@@ -15,6 +15,8 @@ use crate::{
 
 const PREVIEW_LEN: usize = 500;
 const DESCRIPTION_LEN: usize = 160;
+const PAGE_SIZE: i64 = 10;
+pub const PAGE_LEN: usize = PAGE_SIZE as usize;
 
 /// Characters that aren't allowed in article urls.
 const ILLEGAL_URL_CHARS: &[char] = &[
@@ -149,12 +151,25 @@ pub fn id_from_url(connection: &Connection, url: &str) -> Result<i32, DieselErro
     Ok(article.id)
 }
 
+/// Gets all articles
 pub fn list(connection: &Connection) -> Result<Vec<Article>, DieselError> {
     use crate::schema::articles::dsl::*;
 
     articles.order(date.desc()).load::<Article>(connection)
 }
 
+/// Gets one page of articles. Zero is not a valid index.
+pub fn page(connection: &Connection, page: i64) -> Result<Vec<Article>, DieselError> {
+    use crate::schema::articles::dsl::*;
+
+    articles
+        .order(date.desc())
+        .limit(PAGE_SIZE)
+        .offset((page - 1) * PAGE_SIZE)
+        .load::<Article>(connection)
+}
+
+/// Gets a single article with a specific id
 pub fn view(connection: &Connection, name: &str) -> Result<Article, DieselError> {
     use crate::schema::articles::dsl::*;
 
@@ -164,6 +179,7 @@ pub fn view(connection: &Connection, name: &str) -> Result<Article, DieselError>
     }
 }
 
+/// Submits a new article
 pub fn submit(connection: &Connection, article: &NewArticle) -> Result<usize, failure::Error> {
     if article.url.contains(|c| ILLEGAL_URL_CHARS.contains(&c)) {
         return Err(failure::err_msg("Illegal character in article url"));

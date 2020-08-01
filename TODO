@@ -2,7 +2,6 @@
 * Use ArticleIdPath where appropriate
 * Site administration
 * configurable base url
-* Don't salt twice
 * More cows
 * Error handling
 * Separate template for article "header"?

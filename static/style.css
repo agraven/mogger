@@ -111,24 +111,36 @@ nav {
 	background: #e8B8ae;
 	display: flex;
 	margin-bottom: 20px;
+	padding: 0 10px;
 	justify-content: space-between;
 	flex-wrap: wrap;
-}
-nav ul {
 	font-family: "Roboto", sans-serif;
 	font-size: larger;
+}
+nav ul {
 	list-style-type: none;
 	display: inline-flex;
 	padding: 0;
-	margin: 0px 10px;
+	margin: 0;
 }
-nav ul li a, nav ul li .navbar-item {
+nav a, nav ul li .navbar-item {
 	padding: 15px;
 	display: block;
 	text-decoration: none;
 }
-nav ul li a:hover {
+nav a:hover {
 	background: #cc968b70;
+}
+#page-forward {
+	margin-left: auto;
+}
+#page-forward::after {
+	content: "→";
+	padding-left: 5px;
+}
+#page-back::before {
+	content: "←";
+	padding-right: 5px;
 }
 /* Dropdown menu */
 .dropdown {
