@@ -113,53 +113,53 @@ fn router(settings: Settings) -> Router {
         route
             .get("/article/:id")
             .with_path_extractor::<articles::ArticlePath>()
-            .to(handler!(document::index::article));
+            .to(handler!(document::article::view));
 
         route
             .get("/user/:user")
             .with_path_extractor::<users::UserPath>()
-            .to(handler!(document::index::user));
+            .to(handler!(document::user::view));
         route
             .get("/user/:user/edit")
             .with_path_extractor::<users::UserPath>()
-            .to(handler!(document::index::user_edit));
+            .to(handler!(document::user::edit));
         route
             .post("/user/:user/profile")
             .with_path_extractor::<users::UserPath>()
-            .to(body_handler!(document::index::user_profile_post));
+            .to(body_handler!(document::user::profile_post));
         route
             .post("/user/:user/password")
             .with_path_extractor::<users::UserPath>()
-            .to(body_handler!(document::index::user_password_post));
+            .to(body_handler!(document::user::password_post));
         route
             .post("/user/:user/delete")
             .with_path_extractor::<users::UserPath>()
-            .to(body_handler!(document::index::user_delete_post));
+            .to(body_handler!(document::user::delete_post));
 
-        route.get("/login").to(handler!(document::index::login));
+        route.get("/login").to(handler!(document::user::login));
         route
             .post("/login")
-            .to(body_handler!(document::index::login_post));
+            .to(body_handler!(document::user::login_post));
 
-        route.get("/logout").to(handler!(document::index::logout));
+        route.get("/logout").to(handler!(document::user::logout));
 
-        route.get("/signup").to(handler!(document::index::signup));
+        route.get("/signup").to(handler!(document::user::signup));
         route
             .post("/signup")
-            .to(body_handler!(document::index::signup_post));
+            .to(body_handler!(document::user::signup_post));
 
-        route.get("/edit").to(handler!(document::index::edit));
+        route.get("/edit").to(handler!(document::article::edit));
         route
             .post("/edit")
-            .to(body_handler!(document::index::edit_post));
+            .to(body_handler!(document::article::edit_post));
         route
             .get("/edit/:id")
             .with_path_extractor::<articles::ArticleIdPath>()
-            .to(handler!(document::index::edit));
+            .to(handler!(document::article::edit));
         route
             .post("/edit/:id")
             .with_path_extractor::<articles::ArticleIdPath>()
-            .to(body_handler!(document::index::edit_post));
+            .to(body_handler!(document::article::edit_post));
 
         route.scope("/api", |route| {
             route.scope("/articles", |route| {

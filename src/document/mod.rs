@@ -4,7 +4,9 @@ use gotham::state::State;
 use http::StatusCode;
 use hyper::{Body, Response};
 
+pub mod article;
 pub mod index;
+pub mod user;
 
 pub type DocumentResult = Result<Response<Body>, failure::Error>;
 

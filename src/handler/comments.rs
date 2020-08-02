@@ -79,7 +79,7 @@ pub fn render(state: &State) -> Result<Response<Body>, failure::Error> {
     let id = CommentPath::borrow_from(&state).id;
 
     if let Some(comment) = comment::view_single(connection, id)? {
-        let template = crate::document::index::CommentTemplate {
+        let template = crate::document::article::CommentTemplate {
             comment: &comment,
             children: Vec::new(),
             connection,
