@@ -87,6 +87,15 @@ article img {
 	display: block;
 	margin: auto;
 }
+figure {
+	margin: 1em;
+}
+figcaption {
+	color: #444444;
+}
+figure img {
+	max-width: 100%;
+}
 hr {
 	margin: 10px;
 }
