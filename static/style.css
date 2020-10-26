@@ -88,13 +88,20 @@ article img {
 	margin: auto;
 }
 figure {
-	margin: 1em;
-}
-figcaption {
-	color: #444444;
+	margin: 1em -3.5em;
+	background: #e4cfc9;
 }
 figure img {
 	max-width: 100%;
+}
+/* Compensate for markdown whackiness */
+figure p {
+	margin: 0;
+}
+figcaption {
+	color: #444444;
+	padding: 6px;
+	font-style: italic;
 }
 hr {
 	margin: 10px;
@@ -246,6 +253,10 @@ form.validate input:invalid:not(:placeholder-shown):not(:focus) {
 @media (max-width: 510px) {
 	article {
 		padding: 2em;
+	}
+	figure {
+		margin-left: -2em;
+		margin-right: -2em;
 	}
 	.logo img {
 		width: 80px;
