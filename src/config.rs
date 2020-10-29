@@ -1,4 +1,4 @@
-use comrak::ComrakOptions;
+use comrak::{ComrakOptions, ComrakExtensionOptions, ComrakParseOptions, ComrakRenderOptions};
 use gotham_derive::StateData;
 
 /// Application wide settings defined in configuration file.
@@ -27,26 +27,38 @@ pub struct Cookie {
     pub domain: Option<String>,
 }
 
-/// Options for markdown formatting using comrak
+/// Options for comment markdown formatting using comrak
 pub const COMRAK_OPTS: ComrakOptions = ComrakOptions {
-    hardbreaks: false,
-    smart: false,
-    github_pre_lang: true,
-    width: 0,
-    default_info_string: None,
-    unsafe_: false,
-    ext_strikethrough: true,
-    ext_tagfilter: false,
-    ext_table: true,
-    ext_autolink: true,
-    ext_tasklist: false,
-    ext_superscript: false,
-    ext_header_ids: None,
-    ext_footnotes: true,
-    ext_description_lists: false,
+    extension: ComrakExtensionOptions {
+        strikethrough: true,
+        tagfilter: false,
+        table: true,
+        autolink: true,
+        tasklist: false,
+        superscript: false,
+        header_ids: None,
+        footnotes: true,
+        description_lists: false,
+    },
+    parse: ComrakParseOptions {
+        smart: false,
+        default_info_string: None,
+    },
+    render: ComrakRenderOptions {
+        hardbreaks: false,
+        github_pre_lang: true,
+        width: 0,
+        unsafe_: false,
+        escape: true,
+    }
 };
 
+/// Options for aritcle markdown formatting using comrak
 pub const COMRAK_ARTICLE_OPTS: ComrakOptions = ComrakOptions {
-    unsafe_: true,
+    render: ComrakRenderOptions {
+        unsafe_: true,
+        escape: false,
+        ..COMRAK_OPTS.render
+    },
     ..COMRAK_OPTS
 };
