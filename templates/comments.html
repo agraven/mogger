@@ -25,7 +25,7 @@
 		<button type="button" data-action="cancel">Cancel</button>
 	</form>
 	<ul class="links">
-		<li><button class="link-like" data-action="reply">reply</a></li>
+		<li><button class="link-like" data-action="reply">reply</button></li>
 		{% if comment.editable(session, connection).unwrap_or(false) %}
 			<li><button class="link-like" data-action="edit">edit</button></li>
 			<li><button class="link-like" data-action="remove">remove</button></li>
