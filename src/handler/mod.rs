@@ -1,12 +1,13 @@
 use askama::Template;
-use futures::{future, Future, Stream};
+use futures::prelude::*;
 use gotham::{
-    handler::{HandlerFuture, IntoHandlerError},
+    hyper::{body, Body, Response, StatusCode},
+    handler::{HandlerFuture},
     helpers::http::response::create_response,
     state::{FromState, State},
 };
-use http::{Response, StatusCode};
-use hyper::Body;
+
+use std::pin::Pin;
 
 use crate::{
     db::{Connection, DbConnection},
@@ -29,21 +30,19 @@ struct ErrorTemplate<'a> {
 }
 
 /// Creates a `HandlerFuture` that runs the given function
-pub fn body_handler<F>(mut state: State, op: F) -> Box<HandlerFuture>
+pub fn body_handler<F>(mut state: State, op: F) -> Pin<Box<HandlerFuture>>
 where
     F: FnOnce(&State, Vec<u8>) -> Response<Body> + Send + 'static,
 {
-    let f = Body::take_from(&mut state)
-        .concat2()
-        .then(|result| match result {
+    let f = body::to_bytes(Body::take_from(&mut state)).then(|result| match result {
             Ok(body) => {
                 let response = op(&state, body.to_vec());
                 future::ok((state, response))
             }
-            Err(e) => future::err((state, e.into_handler_error())),
+            Err(e) => future::err((state, e.into())),
         });
 
-    Box::new(f)
+    f.boxed()
 }
 
 pub fn error_response(state: &State, error: impl std::fmt::Display) -> Response<Body> {

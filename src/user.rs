@@ -3,7 +3,7 @@ use chrono::{Duration, NaiveDateTime, Utc};
 use cookie::CookieJar;
 use diesel::prelude::*;
 use diesel_derive_enum::DbEnum;
-use futures::future;
+use futures::prelude::*;
 use gotham::{
     handler::HandlerFuture,
     helpers::http::response::create_response,
@@ -14,7 +14,7 @@ use gotham_derive::{NewMiddleware, StateData};
 use rand::prelude::*;
 use sha2::{Digest, Sha256};
 
-use std::borrow::Cow;
+use std::{borrow::Cow, pin::Pin};
 
 use crate::{
     db::{Connection, DbConnection, DieselResult},
@@ -224,9 +224,9 @@ impl Session {
 pub struct SessionMiddleware;
 
 impl Middleware for SessionMiddleware {
-    fn call<C>(self, mut state: State, chain: C) -> Box<HandlerFuture>
+    fn call<C>(self, mut state: State, chain: C) -> Pin<Box<HandlerFuture>>
     where
-        C: FnOnce(State) -> Box<HandlerFuture>,
+        C: FnOnce(State) -> Pin<Box<HandlerFuture>>,
     {
         let put_session = |state: &mut State| -> Result<(), failure::Error> {
             let connection = DbConnection::from_state(&state)?;
@@ -252,7 +252,7 @@ impl Middleware for SessionMiddleware {
             Ok(())
         };
         match put_session(&mut state) {
-            Ok(()) => Box::new(chain(state)),
+            Ok(()) => chain(state).boxed(),
             Err(e) => {
                 let response = create_response(
                     &state,
@@ -260,7 +260,7 @@ impl Middleware for SessionMiddleware {
                     mime::TEXT_PLAIN,
                     e.to_string(),
                 );
-                Box::new(future::ok((state, response)))
+                future::ok((state, response)).boxed()
             }
         }
     }
