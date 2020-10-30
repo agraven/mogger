@@ -1,8 +1,9 @@
 //use gotham::handler::IntoResponse;
-use gotham::helpers::http::response::create_response;
-use gotham::state::State;
-use http::StatusCode;
-use hyper::{Body, Response};
+use gotham::{
+    helpers::http::response::create_response,
+    hyper::{Body, Response, StatusCode},
+    state::State,
+};
 
 pub mod article;
 pub mod index;

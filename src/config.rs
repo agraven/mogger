@@ -1,4 +1,4 @@
-use comrak::{ComrakOptions, ComrakExtensionOptions, ComrakParseOptions, ComrakRenderOptions};
+use comrak::{ComrakExtensionOptions, ComrakOptions, ComrakParseOptions, ComrakRenderOptions};
 use gotham_derive::StateData;
 
 /// Application wide settings defined in configuration file.
@@ -50,7 +50,7 @@ pub const COMRAK_OPTS: ComrakOptions = ComrakOptions {
         width: 0,
         unsafe_: false,
         escape: true,
-    }
+    },
 };
 
 /// Options for aritcle markdown formatting using comrak

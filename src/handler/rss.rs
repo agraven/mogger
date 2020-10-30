@@ -1,8 +1,10 @@
 //! Handler for serving an rss feed
 use chrono::{DateTime, NaiveDateTime, Utc};
-use gotham::helpers::http::response::create_response;
-use gotham::state::{FromState, State};
-use hyper::{Body, Response, StatusCode};
+use gotham::{
+    helpers::http::response::create_response,
+    hyper::{Body, Response, StatusCode},
+    state::{FromState, State},
+};
 use rss::{ChannelBuilder, Item, ItemBuilder};
 
 use crate::{article, article::Article, DbConnection};

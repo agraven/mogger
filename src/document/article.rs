@@ -1,9 +1,9 @@
 use askama::Template;
 use gotham::{
     helpers::http::response::{create_empty_response, create_temporary_redirect as temp_redirect},
+    hyper::StatusCode,
     state::{FromState, State},
 };
-use hyper::StatusCode;
 
 use crate::{
     article::{self, Article, ArticleChanges, NewArticle},

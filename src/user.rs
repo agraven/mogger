@@ -7,6 +7,7 @@ use futures::prelude::*;
 use gotham::{
     handler::HandlerFuture,
     helpers::http::response::create_response,
+    hyper::StatusCode,
     middleware::Middleware,
     state::{FromState, State},
 };
@@ -256,7 +257,7 @@ impl Middleware for SessionMiddleware {
             Err(e) => {
                 let response = create_response(
                     &state,
-                    http::StatusCode::INTERNAL_SERVER_ERROR,
+                    StatusCode::INTERNAL_SERVER_ERROR,
                     mime::TEXT_PLAIN,
                     e.to_string(),
                 );

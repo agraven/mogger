@@ -39,6 +39,7 @@ pub mod schema;
 pub mod user;
 
 use gotham::{
+    hyper::{Body, Response, StatusCode},
     middleware::cookie::CookieParser,
     middleware::state::StateMiddleware,
     pipeline::new_pipeline,
@@ -48,8 +49,6 @@ use gotham::{
     router::Router,
     state::State,
 };
-use http::status::StatusCode;
-use hyper::{Body, Response};
 
 use std::{borrow::Cow, path::Path};
 

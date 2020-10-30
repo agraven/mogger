@@ -1,9 +1,9 @@
 use askama::Template;
 use futures::prelude::*;
 use gotham::{
-    hyper::{body, Body, Response, StatusCode},
-    handler::{HandlerFuture},
+    handler::HandlerFuture,
     helpers::http::response::create_response,
+    hyper::{body, Body, Response, StatusCode},
     state::{FromState, State},
 };
 
@@ -35,12 +35,12 @@ where
     F: FnOnce(&State, Vec<u8>) -> Response<Body> + Send + 'static,
 {
     let f = body::to_bytes(Body::take_from(&mut state)).then(|result| match result {
-            Ok(body) => {
-                let response = op(&state, body.to_vec());
-                future::ok((state, response))
-            }
-            Err(e) => future::err((state, e.into())),
-        });
+        Ok(body) => {
+            let response = op(&state, body.to_vec());
+            future::ok((state, response))
+        }
+        Err(e) => future::err((state, e.into())),
+    });
 
     f.boxed()
 }

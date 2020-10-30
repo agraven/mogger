@@ -1,10 +1,9 @@
 use gotham::{
     helpers::http::response::{create_empty_response, create_response},
+    hyper::{Body, Response, StatusCode},
     state::{FromState, State},
 };
 use gotham_derive::{StateData, StaticResponseExtender};
-use http::{Response, StatusCode};
-use hyper::Body;
 use mime::APPLICATION_JSON as JSON;
 
 use crate::{

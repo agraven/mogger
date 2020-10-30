@@ -1016,8 +1016,6 @@ dependencies = [
  "futures 0.3.7 (registry+https://github.com/rust-lang/crates.io-index)",
  "gotham 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "gotham_derive 0.5.0 (registry+https://github.com/rust-lang/crates.io-index)",
- "http 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
- "hyper 0.13.8 (registry+https://github.com/rust-lang/crates.io-index)",
  "mime 0.3.16 (registry+https://github.com/rust-lang/crates.io-index)",
  "rand 0.7.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "rss 1.9.0 (registry+https://github.com/rust-lang/crates.io-index)",

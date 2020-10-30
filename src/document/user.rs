@@ -4,9 +4,9 @@ use askama::Template;
 use cookie::{Cookie, SameSite};
 use gotham::{
     helpers::http::response::create_temporary_redirect as temp_redirect,
+    hyper::{header, StatusCode},
     state::{client_addr, FromState, State},
 };
-use hyper::{header, StatusCode};
 
 use crate::{
     comment,
