@@ -4,7 +4,7 @@ description = "Simple blogging engine"
 repository = "https://github.com/agraven/mogger"
 homepage = "https://amandag.net"
 license = "AGPL-3.0-or-later"
-version = "0.1.16"
+version = "0.1.17"
 authors = ["Amanda P. Graven <amanda@amandag.net>"]
 edition = "2018"
 readme = "README.md"
@@ -15,9 +15,9 @@ lto = true
 [dependencies]
 askama = "0.9"
 base64 = "0.13"
-bcrypt = "0.8"
+bcrypt = "0.9"
 chrono = { version = "0.4", features = ["serde"] }
-comrak = "0.8"
+comrak = "0.9"
 cookie = { version = "0.14", features = ["percent-encode"] }
 diesel = { version = "1.4", features = ["chrono", "postgres"] }
 diesel-derive-enum = { version = "1.1", features = ["postgres"] }
