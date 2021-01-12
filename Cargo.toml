@@ -39,7 +39,7 @@ toml = "0.5"
 [package.metadata.deb]
 name = "mogger"
 extended-description = "A blogging engine written in rust built for running the site amandag.net."
-depends = "$auto, adduser, postgresql"
+depends = "$auto, adduser"
 section = "web"
 priority = "optional"
 maintainer-scripts = "debian"
