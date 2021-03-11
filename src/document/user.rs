@@ -86,13 +86,16 @@ pub fn login_post(state: &State, post: Vec<u8>) -> DocumentResult {
 struct SignupTemplate<'a> {
     session: Option<&'a Session>,
     connection: &'a Connection,
+    signup_enabled: bool,
 }
 
 pub fn signup(state: &State) -> DocumentResult {
     let connection = &DbConnection::from_state(state)?;
+    let signup_enabled = Settings::borrow_from(state).features.signups;
     Ok(SignupTemplate {
         session: Session::try_borrow_from(state),
         connection,
+        signup_enabled,
     }
     .to_response(state))
 }
@@ -190,7 +193,7 @@ pub fn view(state: &State) -> DocumentResult {
     let user_id = &UserPath::borrow_from(state).user;
     let user = user::get(connection, user_id)?;
     let comments = comment::by_user(connection, user_id)?;
-    let comment_templates = CommentTemplate::from_list(&comments, connection, session);
+    let comment_templates = CommentTemplate::from_list(&comments, connection, session, false);
 
     let template = UserTemplate {
         user: &user,

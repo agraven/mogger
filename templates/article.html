@@ -35,6 +35,7 @@
 		{{ article.formatted() }}
 	</article>
 
+	{% if can_comment %}
 	<form class="comment" id="new-comment">
 		<h2>Write a comment</h2>
 		<input type="hidden" name="article" data-type="int" value="{{ article.id }}">
@@ -49,6 +50,12 @@
 		<textarea name="content" required></textarea>
 		<button type="button" data-action="submit">Submit</button>
 	</form>
+	{% else %}
+	<form class="comment" id="new-comment">
+		<h2>Write a comment</h2>
+		<textarea disabled>Comments are disabled for guest users</textarea>
+	</form>
+	{% endif %}
 
 	{% for tree in comments %}
 		{{ tree.render().unwrap()|safe }}

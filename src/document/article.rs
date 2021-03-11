@@ -8,6 +8,7 @@ use gotham::{
 use crate::{
     article::{self, Article, ArticleChanges, NewArticle},
     comment::{self, Comment},
+    config::Settings,
     db::{Connection, DbConnection},
     document::{DocumentResult, TemplateExt},
     handler::articles::{ArticleIdPath, ArticlePath},
@@ -26,6 +27,7 @@ pub struct ArticleTemplate<'a> {
     comments: Vec<CommentTemplate<'a>>,
     session: Option<&'a Session>,
     connection: &'a Connection,
+    can_comment: bool,
 }
 
 #[derive(Template)]
@@ -35,6 +37,7 @@ pub struct CommentTemplate<'a> {
     pub children: Vec<CommentTemplate<'a>>,
     pub connection: &'a Connection,
     pub session: Option<&'a Session>,
+    pub can_comment: bool,
 }
 
 impl<'a> CommentTemplate<'a> {
@@ -42,16 +45,18 @@ impl<'a> CommentTemplate<'a> {
         tree: &'a comment::Node,
         connection: &'a Connection,
         session: Option<&'a Session>,
+        can_comment: bool,
     ) -> Self {
         CommentTemplate {
             comment: &tree.comment,
             children: tree
                 .children
                 .iter()
-                .map(|child| CommentTemplate::from_node(child, connection, session))
+                .map(|child| CommentTemplate::from_node(child, connection, session, can_comment))
                 .collect(),
             connection,
             session,
+            can_comment,
         }
     }
 
@@ -59,6 +64,7 @@ impl<'a> CommentTemplate<'a> {
         list: &'a [Comment],
         connection: &'a Connection,
         session: Option<&'a Session>,
+        can_comment: bool,
     ) -> Vec<Self> {
         list.iter()
             .map(|comment| CommentTemplate {
@@ -66,6 +72,7 @@ impl<'a> CommentTemplate<'a> {
                 children: Vec::new(),
                 connection,
                 session,
+                can_comment,
             })
             .collect()
     }
@@ -84,6 +91,7 @@ pub fn view(state: &State) -> DocumentResult {
     let connection = &DbConnection::from_state(state)?;
     let id = &ArticlePath::borrow_from(state).id;
     let session = Session::try_borrow_from(state);
+    let can_comment = Settings::borrow_from(state).features.guest_comments || session.is_some();
 
     let article = article::view(connection, &id)?;
     // Return a 404 if the user isn't allowed to view the article
@@ -94,15 +102,17 @@ pub fn view(state: &State) -> DocumentResult {
     let comments = comment::list(connection, article.id)?;
     let comments_template = comments
         .iter()
-        .map(|child| CommentTemplate::from_node(child, connection, session))
+        .map(|child| CommentTemplate::from_node(child, connection, session, can_comment))
         .collect();
     let author = article.user(connection)?;
+    // true if logged in or guest comments permitted
     let template = ArticleTemplate {
         article,
         author_name: author.name,
         comments: comments_template,
         session,
         connection,
+        can_comment,
     };
     let response = template.to_response(state);
     Ok(response)

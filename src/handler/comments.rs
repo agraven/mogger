@@ -9,6 +9,7 @@ use mime::APPLICATION_JSON as JSON;
 use crate::{
     comment,
     comment::{CommentChanges, NewComment},
+    config::Settings,
     document::TemplateExt,
     handler::articles::ArticlePath,
     user::{
@@ -78,11 +79,14 @@ pub fn render(state: &State) -> Result<Response<Body>, failure::Error> {
     let id = CommentPath::borrow_from(&state).id;
 
     if let Some(comment) = comment::view_single(connection, id)? {
+        let session = Session::try_borrow_from(state);
+        let can_comment = session.is_some() || Settings::borrow_from(state).features.guest_comments;
         let template = crate::document::article::CommentTemplate {
             comment: &comment,
             children: Vec::new(),
             connection,
-            session: Session::try_borrow_from(state),
+            session,
+            can_comment,
         };
         Ok(template.to_response(state))
     } else {
@@ -91,6 +95,11 @@ pub fn render(state: &State) -> Result<Response<Body>, failure::Error> {
 }
 
 pub fn submit(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Error> {
+    let session = Session::try_borrow_from(state);
+    let settings = Settings::borrow_from(state);
+    if session.is_none() && !settings.features.guest_comments {
+        return Err(failure::err_msg("Permission denied"));
+    }
     let connection = &DbConnection::borrow_from(state).lock()?;
 
     let new: NewComment = serde_json::from_slice(&post)?;

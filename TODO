@@ -1,3 +1,4 @@
+* Guest comment stuff based on permissions rather than config
 * Implement MaybeSession?
 * Use ArticleIdPath where appropriate
 * Site administration

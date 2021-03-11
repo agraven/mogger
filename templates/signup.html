@@ -9,6 +9,7 @@
 		<header>
 			<h1>Sign up</h1>
 		</header>
+		{% if signup_enabled %}
 		<p>Create an account.
 		<form method="post" class="validate">
 			<div>
@@ -36,5 +37,8 @@
 				<input type="submit">
 			</div>
 		</form>
+		{% else %}
+		<p>Account registration is currently disabled.
+		{% endif %}
 	</article>
 {% endblock %}

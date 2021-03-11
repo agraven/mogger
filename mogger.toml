@@ -3,6 +3,12 @@ host_address = "localhost:6096"
 # Postgres url to connect to the database with
 database_url = "postgres://mogger@localhost/mogger"
 
+[features]
+# Allow registering an account
+signups = false
+# Allow unregistered users to make comments
+guest_comments = false
+
 [cookie]
 # Require HTTPS for cookies
 secure = false
