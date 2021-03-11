@@ -39,6 +39,7 @@ pub const COMRAK_OPTS: ComrakOptions = ComrakOptions {
         header_ids: None,
         footnotes: true,
         description_lists: false,
+        front_matter_delimiter: None,
     },
     parse: ComrakParseOptions {
         smart: false,
