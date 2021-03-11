@@ -7,7 +7,8 @@ use gotham_derive::{StateData, StaticResponseExtender};
 use mime::APPLICATION_JSON as JSON;
 
 use crate::{
-    user::{self, Login, NewUser},
+    config::Settings,
+    user::{self, Login, NewUser, Session},
     DbConnection,
 };
 
@@ -17,6 +18,10 @@ pub struct UserPath {
 }
 
 pub fn create(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Error> {
+    let session = Session::try_borrow_from(state);
+    if session.is_none() && !Settings::borrow_from(state).features.signups {
+        return Err(failure::err_msg("Permission denied"));
+    }
     let connection = &DbConnection::borrow_from(state).lock()?;
 
     let user: NewUser = serde_json::from_slice(&post)?;
