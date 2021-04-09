@@ -78,9 +78,10 @@ pub fn render(state: &State) -> Result<Response<Body>, failure::Error> {
     let connection = &DbConnection::borrow_from(state).lock()?;
     let id = CommentPath::borrow_from(&state).id;
 
-    if let Some(comment) = comment::view_single(connection, id)? {
+    if let Some(mut comment) = comment::view_single(connection, id)? {
+        comment.visible = true;
         let session = Session::try_borrow_from(state);
-        let can_comment = session.is_some() || Settings::borrow_from(state).features.guest_comments;
+        let can_comment = session.is_some();
         let template = crate::document::article::CommentTemplate {
             comment: &comment,
             children: Vec::new(),
@@ -102,7 +103,15 @@ pub fn submit(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::E
     }
     let connection = &DbConnection::borrow_from(state).lock()?;
 
-    let new: NewComment = serde_json::from_slice(&post)?;
+    let mut new: NewComment = serde_json::from_slice(&post)?;
+    // Make guest comments invisible by default
+    if new.author.is_some() {
+        new.visible = true;
+    }
+    // Ensure comment is submitted as own user
+    if new.author.as_ref() != session.as_ref().map(|s| &s.user) {
+        return Err(failure::err_msg("Permission denied"));
+    }
 
     let submitted = comment::submit(connection, new)?;
     let content = serde_json::to_string(&submitted)?;
@@ -146,6 +155,25 @@ pub fn delete(state: &State) -> Result<Response<Body>, failure::Error> {
     };
 
     comment::delete(conn, id)?;
+    Ok(create_empty_response(&state, StatusCode::OK))
+}
+
+pub fn restore(state: &State) -> Result<Response<Body>, failure::Error> {
+    let conn = &DbConnection::borrow_from(state).lock()?;
+    let id = CommentPath::borrow_from(state).id;
+
+    match Session::try_borrow_from(state) {
+        Some(session)
+            if session.allowed(DeleteForeignComment, conn)?
+                || session.allowed(DeleteComment, conn)?
+                    && comment::author(conn, id)?.as_ref() == Some(&session.user) =>
+        {
+            ()
+        }
+        _ => return Err(failure::err_msg("Permission denied")),
+    };
+
+    comment::restore(conn, id)?;
     Ok(create_empty_response(&state, StatusCode::OK))
 }
 

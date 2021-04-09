@@ -1,4 +1,5 @@
-//use gotham::handler::IntoResponse;
+//! Modules for generating HTML documents.
+
 use gotham::{
     helpers::http::response::create_response,
     hyper::{Body, Response, StatusCode},

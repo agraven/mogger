@@ -37,6 +37,7 @@ pub struct NewComment {
     pub author: Option<String>,
     pub name: Option<String>,
     pub content: String,
+    #[serde(skip_deserializing)]
     pub visible: bool,
 }
 
@@ -124,7 +125,7 @@ impl Node {
     }
 }
 
-/// Get a linear list of an articles comments
+/// Get a linear list of an article's comments
 pub fn list_flat(connection: &Connection, article: i32) -> Result<Vec<Comment>, DieselError> {
     use crate::schema::comments::dsl;
 
@@ -210,6 +211,14 @@ pub fn delete(connection: &Connection, id: i32) -> Result<usize, DieselError> {
 
     diesel::update(dsl::comments.find(id))
         .set(dsl::visible.eq(false))
+        .execute(connection)
+}
+
+pub fn restore(connection: &Connection, id: i32) -> Result<usize, DieselError> {
+    use crate::schema::comments::dsl;
+
+    diesel::update(dsl::comments.find(id))
+        .set(dsl::visible.eq(true))
         .execute(connection)
 }
 

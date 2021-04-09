@@ -215,6 +215,11 @@ fn router(settings: Settings) -> Router {
                     .to(handler!(comments::delete));
 
                 route
+                    .get("/restore/:id")
+                    .with_path_extractor::<comments::CommentPath>()
+                    .to(handler!(comments::restore));
+
+                route
                     .get("/purge/:id")
                     .with_path_extractor::<comments::CommentPath>()
                     .to(handler!(comments::purge))

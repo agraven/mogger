@@ -1,3 +1,4 @@
+//! Templates and request handlers for endpoints related to displaying articles
 use askama::Template;
 use gotham::{
     helpers::http::response::{create_empty_response, create_temporary_redirect as temp_redirect},

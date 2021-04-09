@@ -1,3 +1,5 @@
+{% if children.is_empty() && !comment.visible && !comment.editable(session, connection).unwrap_or(false) -%}
+{% else -%}
 <div class="comment" data-id="{{ comment.id }}">
 	<header>
 		{% match comment.author -%}
@@ -12,6 +14,9 @@
 	</header>
 	<div class="body">
 		{% if comment.visible -%}
+			{{ comment.formatted()|safe }}
+		{%- else if comment.editable(session, connection).unwrap_or(false) -%}
+		<p><i>This comment has been deleted</i></p>
 			{{ comment.formatted()|safe }}
 		{%- else -%}
 			[deleted]
@@ -30,7 +35,11 @@
 		{% endif %}
 		{% if comment.editable(session, connection).unwrap_or(false) %}
 			<li><button class="link-like" data-action="edit">edit</button></li>
-			<li><button class="link-like" data-action="remove">remove</button></li>
+			{% if comment.visible %}
+				<li><button class="link-like" data-action="remove">remove</button></li>
+			{% else %}
+				<li><button class="link-like" data-action="restore">restore</button></li>
+			{% endif %}
 		{% endif -%}
 		{% match session %}
 		{% when Some with (session) -%}
@@ -61,3 +70,4 @@
 		{{ child.render().unwrap()|safe }}
 	{% endfor %}
 </div>
+{% endif %}

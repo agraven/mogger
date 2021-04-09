@@ -133,10 +133,33 @@ function remove(comment) {
 	let request = new XMLHttpRequest();
 	request.addEventListener('loadend', function() {
 		if (this.status === 200) {
-			comment.querySelector('.body').innerHTML = "[deleted]";
+			//comment.querySelector('.body').innerHTML = "[deleted]";
+			let removeButton = comment.querySelector('button[data-action="remove"]');
+			removeButton.onclick = function() {
+				restore(comment);
+			};
+			removeButton.innerHTML = "restore";
+			removeButton.setAttribute('data-action', "restore");
 		}
 	}, false);
 	request.open("GET", "/api/comments/delete/" + comment.getAttribute("data-id"));
+	request.send();
+}
+
+function restore(comment) {
+	let request = new XMLHttpRequest();
+	request.addEventListener('loadend', function() {
+		if (this.status === 200) {
+			// Flip the buttons functionality
+			let restoreButton = comment.querySelector('button[data-action="restore"]');
+			restoreButton.onclick = function() {
+				remove(comment);
+			};
+			restoreButton.innerHTML = "remove";
+			restoreButton.setAttribute('data-action', "remove");
+		}
+	}, false);
+	request.open("GET", "/api/comments/restore/" + comment.getAttribute("data-id"));
 	request.send();
 }
 
@@ -156,25 +179,32 @@ function purge(comment) {
 function addCommentListeners(comment) {
 	// Add listeners to comment buttons
 	let replyButton = comment.querySelector('button[data-action="reply"]');
-	if (replyButton !== null) {
+	// Ensure non-null and that the selected button belongs to this comment
+	if (replyButton !== null && replyButton.closest('.comment') === comment) {
 		replyButton.addEventListener('click', function() {
 			reply(comment);
 		}, false);
 	}
 	let editButton = comment.querySelector('button[data-action="edit"]');
-	if (editButton !== null) {
+	if (editButton !== null && editButton.closest('.comment') === comment) {
 		editButton.addEventListener('click', function() {
 			edit(comment);
 		}, false);
 	}
 	let removeButton = comment.querySelector('button[data-action="remove"]');
-	if (removeButton !== null) {
-		removeButton.addEventListener('click', function() {
+		if (removeButton !== null && removeButton.closest('.comment') === comment) {
+		removeButton.onclick = function() {
 			remove(comment);
-		}, false);
+		};
+	}
+	let restoreButton = comment.querySelector('button[data-action="restore"]');
+	if (restoreButton !== null && restoreButton.closest('.comment') === comment)  {
+		restoreButton.onclick = function() {
+			restore(comment);
+		};
 	}
 	let purgeButton = comment.querySelector('button[data-action="purge"]');
-	if (purgeButton !== null) {
+	if (purgeButton !== null && purgeButton.closest('.comment') === comment) {
 		purgeButton.addEventListener('click', function() {
 			purge(comment);
 		}, false);
@@ -182,10 +212,13 @@ function addCommentListeners(comment) {
 
 	// Add listeners to edit form buttons
 	let editForm = comment.querySelector("form.comment.edit");
-	editForm.querySelector('button[data-action="cancel"]').addEventListener('click', function() {
-		comment.querySelector("div.body").style.display = "block";
-		comment.querySelector("form.comment.edit").style.display = "none";
-	}, false);
+	let cancelButton = editForm.querySelector('button[data-action="cancel"]');
+	if (cancelButton !== null) {
+		cancelButton.addEventListener('click', function() {
+			comment.querySelector("div.body").style.display = "block";
+			comment.querySelector("form.comment.edit").style.display = "none";
+		}, false);
+	}
 	editForm.querySelector('button[data-action="save"]').addEventListener('click', function() {
 		sendEdit(comment.querySelector("div.body"), editForm, comment.getAttribute("data-id"));
 	}, false);
