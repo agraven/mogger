@@ -15,17 +15,17 @@ lto = true
 [dependencies]
 askama = "0.9"
 base64 = "0.13"
-bcrypt = "0.9"
+bcrypt = "0.10"
 chrono = { version = "0.4", features = ["serde"] }
-comrak = "0.9"
-cookie = { version = "0.14", features = ["percent-encode"] }
+comrak = { version = "0.12", features = ["syntect"] }
+cookie = { version = "0.15", features = ["percent-encode"] }
 diesel = { version = "1.4", features = ["chrono", "postgres"] }
 diesel-derive-enum = { version = "1.1", features = ["postgres"] }
 diesel_migrations = "1.4"
 failure = "0.1.6"
 futures = "0.3"
-gotham = "0.5.0"
-gotham_derive = "0.5.0"
+gotham = "0.6.0"
+gotham_derive = "0.6.0"
 mime = "0.3"
 rand = "0.8"
 rss = { version = "1.9", features = ["serde"] }

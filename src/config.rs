@@ -1,4 +1,7 @@
-use comrak::{ComrakExtensionOptions, ComrakOptions, ComrakParseOptions, ComrakRenderOptions};
+use comrak::{
+    plugins::syntect::SyntectAdapter, ComrakExtensionOptions, ComrakOptions, ComrakParseOptions,
+    ComrakPlugins, ComrakRenderOptions, ComrakRenderPlugins,
+};
 use gotham_derive::StateData;
 
 /// Application wide settings defined in configuration file.
@@ -74,3 +77,15 @@ pub const COMRAK_ARTICLE_OPTS: ComrakOptions = ComrakOptions {
     },
     ..COMRAK_OPTS
 };
+
+pub fn comrak_syntax_adapter() -> SyntectAdapter<'static> {
+    SyntectAdapter::new("base16-ocean.light")
+}
+
+pub fn comrak_plugins<'a>(adapter: &'a SyntectAdapter) -> ComrakPlugins<'a> {
+    ComrakPlugins {
+        render: ComrakRenderPlugins {
+            codefence_syntax_highlighter: Some(adapter),
+        },
+    }
+}

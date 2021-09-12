@@ -1,15 +1,14 @@
 use chrono::naive::NaiveDateTime;
-use comrak::markdown_to_html;
-use diesel::pg::PgConnection as Connection;
-use diesel::prelude::*;
-use diesel::result::Error as DieselError;
-use diesel::Queryable;
-use diesel::RunQueryDsl;
+use comrak::markdown_to_html_with_plugins;
+use diesel::{
+    pg::PgConnection as Connection, prelude::*, result::Error as DieselError, Queryable,
+    RunQueryDsl,
+};
 
 use crate::schema::articles;
 
 use crate::{
-    config::COMRAK_ARTICLE_OPTS,
+    config::{self, COMRAK_ARTICLE_OPTS},
     user::{Permission, Session, User},
 };
 
@@ -83,7 +82,9 @@ impl Article {
 
     /// Return the marked up version of the article's body.
     pub fn formatted(&self) -> String {
-        markdown_to_html(&self.content, &COMRAK_ARTICLE_OPTS)
+        let adapter = config::comrak_syntax_adapter();
+        let plugins = config::comrak_plugins(&adapter);
+        markdown_to_html_with_plugins(&self.content, &COMRAK_ARTICLE_OPTS, &plugins)
     }
 
     /// Get a short slice of the article's contents.

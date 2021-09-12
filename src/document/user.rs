@@ -110,7 +110,7 @@ struct SignupResultTemplate<'a> {
 pub fn signup_post(state: &State, post: Vec<u8>) -> DocumentResult {
     let session = Session::try_borrow_from(state);
     if session.is_none() && !Settings::borrow_from(state).features.signups {
-        return Err(failure::err_msg("Permission denied"));
+        return Err(failure::err_msg("Signup is disabled"));
     }
     let new_user: NewUser = serde_urlencoded::from_bytes(&post)?;
 
