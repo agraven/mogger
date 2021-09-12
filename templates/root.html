@@ -25,16 +25,15 @@
 			<ul>
 			{% match session %}
 			{% when Some with (session) %}
-				<li class="dropdown">
-					<span class="navbar-item">Welcome, {{ session.user }}</span>
+				<details class="dropdown">
+					<summary>Welcome, {{ session.user }}</summary>
 					<div class="dropdown-content">
 						<a href="/user/{{ session.user }}">Profile</a>
 						{% if session.allowed(Permission::CreateArticle, connection).unwrap_or(false) -%}
 						<a href="/edit">Create article</a>
 						{%- endif %}
-						<a href="/logout">Log out</a>
 					</div>
-				</li>
+				</details>
 			{% when None %}
 				<li><a href="/login">Log in</a></li>
 				<li><a href="/signup">Sign up</a></li>

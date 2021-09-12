@@ -144,6 +144,9 @@ nav a, nav ul li .navbar-item {
 	display: block;
 	text-decoration: none;
 }
+nav summary {
+	padding: 15px;
+}
 nav a:hover {
 	background: #cc968b70;
 }
@@ -163,25 +166,12 @@ nav a:hover {
 	position: relative;
 	display: inline-block;
 }
-.dropdown > span::after {
-	content: "🞀";
-	display: inline-block;
-	width: 10px;
-	padding-left: 5px;
-}
-.dropdown > span:hover::after {
-	content: "🞃";
-}
 .dropdown-content {
-	display: none;
 	position: absolute;
 	background-color: #e8B8ae;
 	min-width: 8rem;
-	right: 0;
+	right: -10px;
 	z-index: 1;
-}
-.dropdown:hover .dropdown-content {
-	display: block;
 }
 footer.notice {
 	background: #e8b8ae;
