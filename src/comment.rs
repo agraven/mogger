@@ -95,7 +95,7 @@ impl Comment {
         if let Some(name) = self.name.as_ref() {
             return Ok(name.to_owned());
         }
-        let user = user::get(connection, &self.author.as_ref().unwrap())?;
+        let user = user::get(connection, self.author.as_ref().unwrap())?;
         Ok(user.name)
     }
 }
@@ -280,7 +280,7 @@ mod tests {
                     children: Vec::new(),
                 },
                 Node {
-                    comment: comment.clone(),
+                    comment,
                     children: Vec::new(),
                 },
             ],

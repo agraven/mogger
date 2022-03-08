@@ -1,10 +1,10 @@
 use gotham::{
     helpers::http::response::{create_empty_response, create_response},
     hyper::{Body, Response, StatusCode},
-    state::{FromState, State},
+    state::{FromState, State, StateData},
+    router::response::StaticResponseExtender,
+    mime::APPLICATION_JSON as JSON,
 };
-use gotham_derive::{StateData, StaticResponseExtender};
-use mime::APPLICATION_JSON as JSON;
 
 use crate::{
     config::Settings,
@@ -34,7 +34,7 @@ pub fn login(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Er
     let connection = &DbConnection::borrow_from(state).lock()?;
 
     let login: Login = serde_json::from_slice(&post)?;
-    let response = match login.login(&connection)? {
+    let response = match login.login(connection)? {
         Some(session) => {
             // Create response
             create_response(

@@ -94,7 +94,7 @@ pub fn view(state: &State) -> DocumentResult {
     let session = Session::try_borrow_from(state);
     let can_comment = Settings::borrow_from(state).features.guest_comments || session.is_some();
 
-    let article = article::view(connection, &id)?;
+    let article = article::view(connection, id)?;
     // Return a 404 if the user isn't allowed to view the article
     if !article.viewable(session, connection)? {
         return Ok(create_empty_response(state, StatusCode::NOT_FOUND));
@@ -147,7 +147,6 @@ pub fn edit_post(state: &State, post: Vec<u8>) -> DocumentResult {
                     || s.allowed(EditArticle, conn)?
                         && s.user == article::author(conn, path.id)? =>
             {
-                ()
             }
             _ => return Err(failure::err_msg("Permission denied")),
         };

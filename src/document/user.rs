@@ -172,7 +172,7 @@ pub fn logout(state: &State) -> DocumentResult {
 
     // Delete session cookie with Max-Age=0
     let cookie = Cookie::build("session", "")
-        .max_age(time::Duration::zero())
+        .max_age(Default::default())
         .finish();
     response
         .headers_mut()
@@ -223,7 +223,7 @@ pub fn edit(state: &State) -> DocumentResult {
     let session = Session::try_borrow_from(state);
 
     let user_id = &UserPath::borrow_from(state).user;
-    let user = user::get(connection, &user_id)?;
+    let user = user::get(connection, user_id)?;
 
     let template = UserProfileTemplate {
         session,
@@ -253,7 +253,7 @@ pub fn password_post(state: &State, post: Vec<u8>) -> DocumentResult {
     let connection = &DbConnection::from_state(state)?;
     let user_id = &UserPath::borrow_from(state).user;
 
-    if !user::change_password(connection, &user_id, &change)? {
+    if !user::change_password(connection, user_id, &change)? {
         return Err(failure::err_msg("Wrong password"));
     }
 
@@ -268,7 +268,7 @@ pub fn delete_post(state: &State, post: Vec<u8>) -> DocumentResult {
     let deletion: UserDeletion = serde_urlencoded::from_bytes(&post)?;
     let user_id = &UserPath::borrow_from(state).user;
 
-    user::delete(connection, &user_id, &deletion)?;
+    user::delete(connection, user_id, &deletion)?;
 
     let mut response = temp_redirect(state, "/");
     *response.status_mut() = StatusCode::SEE_OTHER;

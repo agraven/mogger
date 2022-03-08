@@ -3,9 +3,9 @@
 use askama::Template;
 use gotham::{
     helpers::http::response::create_temporary_redirect as temp_redirect,
-    state::{FromState, State},
+    state::{FromState, State, StateData},
+    router::response::StaticResponseExtender,
 };
-use gotham_derive::{StateData, StaticResponseExtender};
 
 use super::{DocumentResult, TemplateExt};
 use crate::{

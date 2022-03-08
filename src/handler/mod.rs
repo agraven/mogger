@@ -5,6 +5,7 @@ use gotham::{
     helpers::http::response::create_response,
     hyper::{body, Body, Response, StatusCode},
     state::{FromState, State},
+    mime,
 };
 
 use std::pin::Pin;

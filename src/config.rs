@@ -2,7 +2,7 @@ use comrak::{
     plugins::syntect::SyntectAdapter, ComrakExtensionOptions, ComrakOptions, ComrakParseOptions,
     ComrakPlugins, ComrakRenderOptions, ComrakRenderPlugins,
 };
-use gotham_derive::StateData;
+use gotham::state::StateData;
 
 /// Application wide settings defined in configuration file.
 #[derive(Deserialize, StateData, Clone)]

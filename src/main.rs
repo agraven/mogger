@@ -1,23 +1,4 @@
 //! A simple blogging engine.
-//!
-//! It has the following address scheme:
-//! * `/api` - JSON interface
-//!     * `/article` - Article handling
-//!         * `/list` - List all articles
-//!         * `/view/<url|id>` - Gets the article with the specified `url` or `id`
-//!         * `/submit` - Submit an article
-//!         * `/edit/<url|id>` - Edit the article with the specified `url` or `id`
-//!     * `/comments` - Comment handling
-//!         * `/list/<url|id>` - Gets the comments for the specified article
-//!         * `/view/<id>` - Gets comment subtree with `id`
-//!         * `/single/<id>` - Gets the single comment with `id`
-//!         * `/submit` - Submits a comment
-//!         * `/edit/<id>` - Edits the comment with `id`
-//!         * `/delete/<id>` - Deletes the selected comment (i.e. marks it as hidden)
-//!         * `/purge/<id>` - Purges the selected comment (i.e. removes from the database)
-//!     * `/users` - User handling
-//!         * `/create` - Create a user
-//! * `/feed.rss` - RSS feed
 
 #![allow(clippy::new_without_default)]
 
@@ -43,9 +24,9 @@ use gotham::{
     middleware::cookie::CookieParser,
     middleware::state::StateMiddleware,
     pipeline::new_pipeline,
-    pipeline::single::single_pipeline,
+    pipeline::single_pipeline,
     router::builder::{build_router, DefineSingleRoute, DrawRoutes},
-    router::response::extender::ResponseExtender,
+    router::response::ResponseExtender,
     router::Router,
     state::State,
 };
@@ -252,6 +233,6 @@ fn main() -> Result<(), failure::Error> {
     let address = settings.host_address.clone();
 
     println!("Running at {}", &address);
-    gotham::start(address, router(settings));
+    gotham::start(address, router(settings))?;
     Ok(())
 }

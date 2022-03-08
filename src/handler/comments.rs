@@ -1,10 +1,10 @@
 use gotham::{
     helpers::http::response::{create_empty_response, create_response},
     hyper::{Body, Response, StatusCode},
-    state::{FromState, State},
+    state::{FromState, State, StateData},
+    router::response::StaticResponseExtender,
+    mime::{APPLICATION_JSON as JSON, TEXT_HTML},
 };
-use gotham_derive::{StateData, StaticResponseExtender};
-use mime::APPLICATION_JSON as JSON;
 
 use crate::{
     comment,
@@ -31,52 +31,52 @@ pub struct Context {
 
 pub fn list(state: &State) -> Result<Response<Body>, failure::Error> {
     let connection = &DbConnection::borrow_from(state).lock()?;
-    let id = ArticlePath::borrow_from(&state).find_id(connection)?;
+    let id = ArticlePath::borrow_from(state).find_id(connection)?;
 
     let comments = comment::list(connection, id)?;
     let content = serde_json::to_string(&comments)?;
-    Ok(create_response(&state, StatusCode::OK, JSON, content))
+    Ok(create_response(state, StatusCode::OK, JSON, content))
 }
 
 pub fn view(state: &State) -> Result<Response<Body>, failure::Error> {
     let connection = &DbConnection::borrow_from(state).lock()?;
-    let query = Context::borrow_from(&state);
+    let query = Context::borrow_from(state);
     let context = query.context.unwrap_or(0);
-    let id = CommentPath::borrow_from(&state).id;
+    let id = CommentPath::borrow_from(state).id;
 
     let comment = comment::view(connection, id, context)?;
     let content = serde_json::to_string(&comment)?;
-    Ok(create_response(&state, StatusCode::OK, JSON, content))
+    Ok(create_response(state, StatusCode::OK, JSON, content))
 }
 
 pub fn single(state: &State) -> Result<Response<Body>, failure::Error> {
     let connection = &DbConnection::borrow_from(state).lock()?;
-    let id = CommentPath::borrow_from(&state).id;
+    let id = CommentPath::borrow_from(state).id;
 
     let comment = comment::view_single(connection, id)?;
     let content = serde_json::to_string(&comment)?;
-    Ok(create_response(&state, StatusCode::OK, JSON, content))
+    Ok(create_response(state, StatusCode::OK, JSON, content))
 }
 
 pub fn render_content(state: &State) -> Result<Response<Body>, failure::Error> {
     let connection = &DbConnection::borrow_from(state).lock()?;
-    let id = CommentPath::borrow_from(&state).id;
+    let id = CommentPath::borrow_from(state).id;
 
     if let Some(comment) = comment::view_single(connection, id)? {
         Ok(create_response(
-            &state,
+            state,
             StatusCode::OK,
-            mime::TEXT_HTML,
+            TEXT_HTML,
             comment.formatted(),
         ))
     } else {
-        Ok(create_empty_response(&state, StatusCode::NOT_FOUND))
+        Ok(create_empty_response(state, StatusCode::NOT_FOUND))
     }
 }
 
 pub fn render(state: &State) -> Result<Response<Body>, failure::Error> {
     let connection = &DbConnection::borrow_from(state).lock()?;
-    let id = CommentPath::borrow_from(&state).id;
+    let id = CommentPath::borrow_from(state).id;
 
     if let Some(mut comment) = comment::view_single(connection, id)? {
         comment.visible = true;
@@ -91,7 +91,7 @@ pub fn render(state: &State) -> Result<Response<Body>, failure::Error> {
         };
         Ok(template.to_response(state))
     } else {
-        Ok(create_empty_response(&state, StatusCode::NOT_FOUND))
+        Ok(create_empty_response(state, StatusCode::NOT_FOUND))
     }
 }
 
@@ -115,7 +115,7 @@ pub fn submit(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::E
 
     let submitted = comment::submit(connection, new)?;
     let content = serde_json::to_string(&submitted)?;
-    Ok(create_response(&state, StatusCode::OK, JSON, content))
+    Ok(create_response(state, StatusCode::OK, JSON, content))
 }
 
 pub fn edit(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Error> {
@@ -128,7 +128,6 @@ pub fn edit(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Err
                 || session.allowed(EditComment, connection)?
                     && comment::author(connection, id)?.as_ref() == Some(&session.user) =>
         {
-            ()
         }
         _ => return Err(failure::err_msg("Permission denied")),
     };
@@ -136,7 +135,7 @@ pub fn edit(state: &State, post: Vec<u8>) -> Result<Response<Body>, failure::Err
     let changes: CommentChanges = serde_json::from_slice(&post)?;
 
     comment::edit(connection, id, changes)?;
-    Ok(create_empty_response(&state, StatusCode::OK))
+    Ok(create_empty_response(state, StatusCode::OK))
 }
 
 pub fn delete(state: &State) -> Result<Response<Body>, failure::Error> {
@@ -149,13 +148,12 @@ pub fn delete(state: &State) -> Result<Response<Body>, failure::Error> {
                 || session.allowed(DeleteComment, conn)?
                     && comment::author(conn, id)?.as_ref() == Some(&session.user) =>
         {
-            ()
         }
         _ => return Err(failure::err_msg("Permission denied")),
     };
 
     comment::delete(conn, id)?;
-    Ok(create_empty_response(&state, StatusCode::OK))
+    Ok(create_empty_response(state, StatusCode::OK))
 }
 
 pub fn restore(state: &State) -> Result<Response<Body>, failure::Error> {
@@ -168,13 +166,12 @@ pub fn restore(state: &State) -> Result<Response<Body>, failure::Error> {
                 || session.allowed(DeleteComment, conn)?
                     && comment::author(conn, id)?.as_ref() == Some(&session.user) =>
         {
-            ()
         }
         _ => return Err(failure::err_msg("Permission denied")),
     };
 
     comment::restore(conn, id)?;
-    Ok(create_empty_response(&state, StatusCode::OK))
+    Ok(create_empty_response(state, StatusCode::OK))
 }
 
 pub fn purge(state: &State) -> Result<Response<Body>, failure::Error> {
@@ -187,5 +184,5 @@ pub fn purge(state: &State) -> Result<Response<Body>, failure::Error> {
     };
 
     comment::purge(conn, id)?;
-    Ok(create_empty_response(&state, StatusCode::OK))
+    Ok(create_empty_response(state, StatusCode::OK))
 }

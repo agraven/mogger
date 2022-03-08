@@ -1,6 +1,5 @@
 use diesel_migrations::embed_migrations;
-use gotham::state::FromState;
-use gotham_derive::StateData;
+use gotham::state::{FromState, StateData};
 
 use std::sync::{Arc, Mutex, MutexGuard};
 

@@ -8,10 +8,10 @@ use gotham::{
     handler::HandlerFuture,
     helpers::http::response::create_response,
     hyper::StatusCode,
-    middleware::Middleware,
-    state::{FromState, State},
+    middleware::{Middleware, NewMiddleware},
+    state::{FromState, State, StateData},
+    mime,
 };
-use gotham_derive::{NewMiddleware, StateData};
 use rand::prelude::*;
 use sha2::{Digest, Sha256};
 
@@ -230,8 +230,8 @@ impl Middleware for SessionMiddleware {
         C: FnOnce(State) -> Pin<Box<HandlerFuture>>,
     {
         let put_session = |state: &mut State| -> Result<(), failure::Error> {
-            let connection = DbConnection::from_state(&state)?;
-            let cookie = CookieJar::borrow_from(&state)
+            let connection = DbConnection::from_state(state)?;
+            let cookie = CookieJar::borrow_from(state)
                 .get("session")
                 .map(|cookie| cookie.value());
             if let Some(id) = cookie {
@@ -273,7 +273,7 @@ fn hash(key: &str) -> BcryptResult<String> {
 }
 
 fn verify_old(key: &str, salt: &[u8], hash: &str) -> BcryptResult<bool> {
-    let digest = Sha256::new().chain(key).chain(salt).finalize();
+    let digest = Sha256::new().chain_update(key).chain_update(salt).finalize();
     let matches = bcrypt::verify(&base64::encode(&digest), hash)?;
     Ok(matches)
 }

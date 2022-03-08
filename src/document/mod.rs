@@ -4,6 +4,7 @@ use gotham::{
     helpers::http::response::create_response,
     hyper::{Body, Response, StatusCode},
     state::State,
+    mime,
 };
 
 pub mod article;
